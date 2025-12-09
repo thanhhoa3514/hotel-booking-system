@@ -15,7 +15,6 @@ async function bootstrap() {
           imgSrc: ["'self'", 'data:', 'https:'],
         },
       },
-      // Nếu bạn load ảnh từ domain khác (ví dụ S3), cần mở cái này
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );

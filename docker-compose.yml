@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_USER: thanhhoa
       POSTGRES_PASSWORD: 135213079819
-      POSTGRES_DB: hotel_db
+      POSTGRES_DB: hotel__booking_db
     ports:
       - "5432:5432"
     volumes:
@@ -18,7 +18,7 @@ services:
   # 2. Redis cho Cache & Queue
   redis:
     image: redis:alpine
-    container_name: hotel_redis
+    container_name: hotel_management_redis
     restart: always
     ports:
       - "6379:6379"

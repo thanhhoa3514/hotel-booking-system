@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Be_Vietnam_Pro } from "next/font/google";
+import { Navbar } from "@/components/common/navbar";
+import { Footer } from "@/components/common/footer";
 
 
-const fontSans = Be_Vietnam_Pro({ 
-  subsets: ["latin"], 
+const fontSans = Be_Vietnam_Pro({
+  subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-sans", // Khai báo biến CSS
 });
@@ -33,9 +35,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased ${fontSans.variable}`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased ${fontSans.variable} min-h-screen flex flex-col bg-slate-50`}
       >
-        {children}
+        <Navbar />
+        <main className="flex-1">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   );

@@ -9,6 +9,10 @@ import { AuthModule } from './auth/auth.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { LoggerModule } from 'nestjs-pino';
+import { JwtService } from './jwt/jwt.service';
+import { RedisService } from './redis/redis.service';
+import { RedisModule } from './redis/redis.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -37,8 +41,9 @@ import { LoggerModule } from 'nestjs-pino';
         autoLogging: true,
       },
     }),
+    RedisModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, HealthController],
+  providers: [AppService, JwtService, RedisService],
 })
 export class AppModule {}

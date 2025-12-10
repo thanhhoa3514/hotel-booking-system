@@ -4,7 +4,7 @@ services:
   # 1. Database chính
   postgres:
     image: postgres:16-alpine # Bản alpine cho nhẹ
-    container_name: hotel_postgres
+    container_name: hotel_management_container
     restart: always
     environment:
       POSTGRES_USER: thanhhoa
@@ -14,17 +14,27 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U thanhhoa -d hotel__booking_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # 2. Redis cho Cache & Queue
   redis:
     image: redis:alpine
-    container_name: hotel_management_redis
+    container_name: hotel_management_redis_container
     restart: always
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data:

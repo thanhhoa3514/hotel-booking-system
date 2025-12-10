@@ -12,7 +12,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { JwtService } from './jwt/jwt.service';
 import { RedisService } from './redis/redis.service';
 import { RedisModule } from './redis/redis.module';
-import { HealthController } from './health/health.controller';
+// import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -28,14 +28,14 @@ import { HealthController } from './health/health.controller';
         transport:
           process.env.NODE_ENV !== 'production'
             ? {
-                target: 'pino-pretty',
-                options: {
-                  colorize: true,
-                  singleLine: true,
-                  translateTime: 'SYS:standard',
-                  ignore: 'pid,hostname',
-                },
-              }
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+                singleLine: true,
+                translateTime: 'SYS:standard',
+                ignore: 'pid,hostname',
+              },
+            }
             : undefined,
         level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
         autoLogging: true,
@@ -43,7 +43,7 @@ import { HealthController } from './health/health.controller';
     }),
     RedisModule,
   ],
-  controllers: [AppController, HealthController],
+  controllers: [AppController, /* HealthController */],
   providers: [AppService, JwtService, RedisService],
 })
-export class AppModule {}
+export class AppModule { }

@@ -13,10 +13,485 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+}
+
+enum Provider {
+  GOOGLE
+  FACEBOOK
+  APPLE
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  CLEANING
+  OUT_OF_ORDER
+}
+enum BookingStatus {
+  PENDING           // Chờ xác nhận
+  CONFIRMED         // Đã xác nhận
+  CHECKED_IN        // Đã check-in
+  CHECKED_OUT       // Đã check-out
+  CANCELLED         // Đã hủy
+  NO_SHOW          // Không đến
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  MOMO
+  VNPAY
+  ZALOPAY
+}
+
+enum BedType {
+  SINGLE
+  DOUBLE
+  QUEEN
+  KING
+  TWIN
+}
 model User {
-  id        Int @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
+  id            String      @id @default(uuid())
+  email         String      @unique
+  password      String?     // Null nếu đăng nhập social
+  fullName      String      @map("full_name")
+  phone         String?
+  avatarUrl     String?     @map("avatar_url")
+  status        UserStatus  @default(ACTIVE)
+
+  // Social Login
+  providers     UserProvider[]
+
+  // RBAC
+  roleId        String      @map("role_id")
+  role          Role        @relation(fields: [roleId], references: [id])
+  lastLoginAt         DateTime? @map("last_login_at")
+  lastLoginIp         String?   @map("last_login_ip")
+
+  // Business Relations
+  bookings      Booking[]
+  reviews       Review[]
+
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@index([roleId])
+  @@index([status])
+  @@map("users")
+}
+model UserProvider {
+  id           String    @id @default(uuid())
+  provider     Provider
+  providerId   String    @map("provider_id")
+  
+  userId       String    @map("user_id")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@map("user_providers")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, GUEST
+  description String?
+  isSystem    Boolean  @default(false) @map("is_system") // Role hệ thống không được xóa
+  
+  users       User[]
+  permissions RolePermission[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  action      String   // create, read, update, delete, manage
+  resource    String   // booking, room, user, price, report
+  slug        String   @unique // booking:create, room:delete, report:view
+  description String?
+
+  roles       RolePermission[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([resource])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String   @map("role_id")
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  permissionId String   @map("permission_id")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ==========================================
+// 2. HOTEL & ROOM MANAGEMENT
+// ==========================================
+
+model RoomType {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  slug          String    @unique
+  description   String?   @db.Text
+  
+  // Pricing
+  basePrice     Decimal   @map("base_price") @db.Decimal(10, 2)
+  
+  // Room Details
+  capacity      Int       // Số người tối đa
+  bedType       BedType   @map("bed_type")
+  bedCount      Int       @default(1) @map("bed_count")
+  size          Decimal?  @db.Decimal(6, 2) // m2
+  
+  // Amenities (JSON array)
+  amenities     Json      @default("[]") // ["wifi", "tv", "minibar", "balcony", "bathtub"]
+  
+  // Display
+  displayOrder  Int       @default(0) @map("display_order")
+  isActive      Boolean   @default(true) @map("is_active")
+  
+  rooms         Room[]
+  images        RoomImage[]
+  priceCalendar PriceCalendar[]
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([isActive, displayOrder])
+  @@map("room_types")
+}
+
+model RoomImage {
+  id           String    @id @default(uuid())
+  url          String
+  altText      String?   @map("alt_text")
+  isPrimary    Boolean   @default(false) @map("is_primary")
+  displayOrder Int       @default(0) @map("display_order")
+  
+  roomTypeId   String    @map("room_type_id")
+  roomType     RoomType  @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([roomTypeId, isPrimary])
+  @@map("room_images")
+}
+
+model Room {
+  id           String      @id @default(uuid())
+  roomNumber   String      @unique @map("room_number")
+  floor        Int
+  status       RoomStatus  @default(AVAILABLE)
+  
+  typeId       String      @map("type_id")
+  roomType     RoomType    @relation(fields: [typeId], references: [id])
+  
+  // Notes
+  notes        String?     @db.Text // Ghi chú nội bộ (vấn đề, sửa chữa...)
+  
+  bookings     BookingRoom[]
+
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@index([typeId, status])
+  @@index([status])
+  @@map("rooms")
+}
+
+// ==========================================
+// 3. DYNAMIC PRICING
+// ==========================================
+
+model PriceCalendar {
+  id           String    @id @default(uuid())
+  date         DateTime  @db.Date
+  price        Decimal   @db.Decimal(10, 2)
+  
+  // Metadata
+  reason       String?   // "HOLIDAY", "WEEKEND", "EVENT", "SEASON"
+  note         String?
+  
+  roomTypeId   String    @map("room_type_id")
+  roomType     RoomType  @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@unique([roomTypeId, date])
+  @@index([date])
+  @@index([roomTypeId, date])
+  @@map("price_calendar")
+}
+
+// ==========================================
+// 4. BOOKING SYSTEM
+// ==========================================
+
+model Booking {
+  id              String         @id @default(uuid())
+  bookingCode     String         @unique @map("booking_code") // BK20250101001
+  
+  userId          String         @map("user_id")
+  user            User           @relation(fields: [userId], references: [id])
+
+  // Guest Information (có thể khác với User)
+  guestName       String         @map("guest_name")
+  guestEmail      String         @map("guest_email")
+  guestPhone      String         @map("guest_phone")
+  guestIdNumber   String?        @map("guest_id_number") // CMND/CCCD
+  
+  // Booking Details
+  checkInDate     DateTime       @map("check_in_date") @db.Date
+  checkOutDate    DateTime       @map("check_out_date") @db.Date
+  checkInTime     DateTime?      @map("check_in_time") // Thời gian thực tế check-in
+  checkOutTime    DateTime?      @map("check_out_time") // Thời gian thực tế check-out
+  numberOfGuests  Int            @map("number_of_guests")
+  numberOfNights  Int            @map("number_of_nights") // Computed field
+  
+  // Pricing
+  subtotal        Decimal        @db.Decimal(10, 2) // Tổng tiền phòng
+  taxAmount       Decimal        @default(0) @db.Decimal(10, 2) @map("tax_amount") // Thuế VAT
+  serviceCharge   Decimal        @default(0) @db.Decimal(10, 2) @map("service_charge") // Phí dịch vụ
+  discountAmount  Decimal        @default(0) @db.Decimal(10, 2) @map("discount_amount")
+  totalAmount     Decimal        @db.Decimal(10, 2) @map("total_amount")
+  paidAmount      Decimal        @default(0) @db.Decimal(10, 2) @map("paid_amount")
+  
+  // Status
+  status          BookingStatus  @default(PENDING)
+  
+  // Special Requests & Notes
+  specialRequests String?        @db.Text @map("special_requests")
+  staffNotes      String?        @db.Text @map("staff_notes")
+  
+  // Cancellation
+  cancelledAt     DateTime?      @map("cancelled_at")
+  cancelledBy     String?        @map("cancelled_by") // User ID
+  cancelReason    String?        @db.Text @map("cancel_reason")
+  
+  // Source tracking
+  bookingSource   String?        @map("booking_source") // "WEBSITE", "PHONE", "WALK_IN", "OTA"
+
+  // Relations
+  rooms           BookingRoom[]
+  payments        Payment[]
+  review          Review?
+
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  @@index([bookingCode])
+  @@index([userId])
+  @@index([status, checkInDate])
+  @@index([checkInDate, checkOutDate])
+  @@index([guestEmail])
+  @@index([guestPhone])
+  @@map("bookings")
+}
+
+model BookingRoom {
+  id              String   @id @default(uuid())
+  
+  bookingId       String   @map("booking_id")
+  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  roomId          String   @map("room_id")
+  room            Room     @relation(fields: [roomId], references: [id])
+  
+  // Snapshot giá tại thời điểm đặt
+  pricePerNight   Decimal  @map("price_per_night") @db.Decimal(10, 2)
+  numberOfNights  Int      @map("number_of_nights")
+  totalPrice      Decimal  @map("total_price") @db.Decimal(10, 2)
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@index([roomId])
+  @@map("booking_rooms")
+}
+
+// ==========================================
+// 5. PAYMENT SYSTEM
+// ==========================================
+
+model Payment {
+  id              String        @id @default(uuid())
+  amount          Decimal       @db.Decimal(10, 2)
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  
+  // Payment Gateway
+  transactionId   String?       @unique @map("transaction_id")
+  gatewayResponse Json?         @map("gateway_response")
+  
+  bookingId       String        @map("booking_id")
+  booking         Booking       @relation(fields: [bookingId], references: [id])
+  
+  // Refund tracking
+  refundedAmount  Decimal?      @map("refunded_amount") @db.Decimal(10, 2)
+  refundedAt      DateTime?     @map("refunded_at")
+  refundReason    String?       @db.Text @map("refund_reason")
+  
+  // Metadata
+  paidBy          String?       @map("paid_by") // Tên người thanh toán
+  notes           String?       @db.Text
+  
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@index([bookingId])
+  @@index([status])
+  @@index([transactionId])
+  @@map("payments")
+}
+
+// ==========================================
+// 6. REVIEW SYSTEM
+// ==========================================
+
+model Review {
+  id              String   @id @default(uuid())
+  
+  // Ratings (1-5)
+  overallRating   Int      @map("overall_rating")
+  cleanlinessRating Int?   @map("cleanliness_rating")
+  serviceRating   Int?     @map("service_rating")
+  valueRating     Int?     @map("value_rating")
+  locationRating  Int?     @map("location_rating")
+  
+  // Content
+  title           String?
+  comment         String?  @db.Text
+  
+  // Relations
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id])
+  
+  bookingId       String   @unique @map("booking_id")
+  booking         Booking  @relation(fields: [bookingId], references: [id])
+  
+  // Moderation
+  isApproved      Boolean  @default(false) @map("is_approved")
+  approvedAt      DateTime? @map("approved_at")
+  approvedBy      String?  @map("approved_by") // User ID
+  
+  // Response từ khách sạn
+  hotelResponse   String?  @db.Text @map("hotel_response")
+  respondedAt     DateTime? @map("responded_at")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([bookingId])
+  @@index([isApproved, overallRating])
+  @@map("reviews")
+}
+
+// ==========================================
+// 7. PROMOTIONS & DISCOUNTS
+// ==========================================
+
+model Promotion {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  name            String
+  description     String?   @db.Text
+  
+  // Discount
+  discountType    String    // "PERCENTAGE", "FIXED_AMOUNT"
+  discountValue   Decimal   @map("discount_value") @db.Decimal(10, 2)
+  
+  // Validity
+  startDate       DateTime  @map("start_date")
+  endDate         DateTime  @map("end_date")
+  
+  // Usage limits
+  maxUses         Int?      @map("max_uses")
+  usedCount       Int       @default(0) @map("used_count")
+  maxUsesPerUser  Int?      @map("max_uses_per_user")
+  
+  // Conditions
+  minBookingAmount Decimal? @map("min_booking_amount") @db.Decimal(10, 2)
+  applicableRoomTypes Json? @map("applicable_room_types") // Array of room type IDs
+  
+  isActive        Boolean   @default(true) @map("is_active")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([code])
+  @@index([isActive, startDate, endDate])
+  @@map("promotions")
+}
+
+// ==========================================
+// 8. SYSTEM SETTINGS
+// ==========================================
+
+model Setting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   @db.Text
+  type        String   // TEXT, NUMBER, JSON, BOOLEAN
+  category    String   // GENERAL, BOOKING, PAYMENT, EMAIL
+  
+  description String?  @db.Text
+  isPublic    Boolean  @default(false) @map("is_public") 
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@map("settings")
+}
+model Notification {
+  id          String   @id @default(uuid())
+  
+  userId      String   @map("user_id")
+  
+  type        String   // BOOKING_CONFIRMED, PAYMENT_RECEIVED, CHECK_IN_REMINDER
+  title       String
+  message     String   @db.Text
+  
+  // Links
+  actionUrl   String?  @map("action_url")
+  
+  isRead      Boolean  @default(false) @map("is_read")
+  readAt      DateTime? @map("read_at")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }

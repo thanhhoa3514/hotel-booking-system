@@ -1,26 +1,73 @@
-import { Injectable } from '@nestjs/common';
-import { CreateRoomDto } from './dto/create-room.dto';
-import { UpdateRoomDto } from './dto/update-room.dto';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateRoomDto, UpdateRoomDto } from './dto/room.dto';
 
 @Injectable()
 export class RoomsService {
-  create(createRoomDto: CreateRoomDto) {
-    return 'This action adds a new room';
+  constructor(private prisma: PrismaService) { }
+
+  async create(createRoomDto: CreateRoomDto) {
+    // Check room number uniqueness
+    const existingRoom = await this.prisma.room.findUnique({
+      where: { roomNumber: createRoomDto.roomNumber },
+    });
+    if (existingRoom) {
+      throw new ConflictException(`Room number ${createRoomDto.roomNumber} already exists`);
+    }
+
+    // Check typeId existence
+    const roomType = await this.prisma.roomType.findUnique({
+      where: { id: createRoomDto.typeId },
+    });
+    if (!roomType) {
+      throw new BadRequestException('Invalid Room Type ID');
+    }
+
+    return this.prisma.room.create({
+      data: createRoomDto,
+      include: {
+        roomType: true,
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all rooms`;
+  async findAll() {
+    return this.prisma.room.findMany({
+      include: {
+        roomType: {
+          select: { name: true, slug: true },
+        },
+      },
+      orderBy: { roomNumber: 'asc' },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} room`;
+  async findOne(id: string) {
+    const room = await this.prisma.room.findUnique({
+      where: { id },
+      include: {
+        roomType: true,
+      },
+    });
+    if (!room) {
+      throw new NotFoundException(`Room with ID ${id} not found`);
+    }
+    return room;
   }
 
-  update(id: number, updateRoomDto: UpdateRoomDto) {
-    return `This action updates a #${id} room`;
+  async update(id: string, updateRoomDto: UpdateRoomDto) {
+    await this.findOne(id);
+
+    return this.prisma.room.update({
+      where: { id },
+      data: updateRoomDto,
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} room`;
+  async remove(id: string) {
+    await this.findOne(id);
+    return this.prisma.room.delete({
+      where: { id },
+    });
   }
 }

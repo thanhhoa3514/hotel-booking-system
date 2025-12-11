@@ -4,9 +4,10 @@ export interface User {
   fullName: string;
   phone?: string;
   avatarUrl?: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  status: 'ACTIVE' | 'INACTIVE' | 'BANNED';
   roleId: string;
   role?: Role;
+  lastLoginAt?: string;
   createdAt: string;
   updatedAt: string;
 }

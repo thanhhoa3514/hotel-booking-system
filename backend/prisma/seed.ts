@@ -229,9 +229,10 @@ async function main() {
       update: {},
       create: {
         name: 'Standard',
+        slug: 'standard',
         description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản',
         basePrice: 500000,
-        maxOccupancy: 2,
+        capacity: 2,
         bedType: 'SINGLE',
         size: 25,
         amenities: ['WiFi', 'TV', 'Điều hòa', 'Tủ lạnh'],
@@ -242,9 +243,10 @@ async function main() {
       update: {},
       create: {
         name: 'Deluxe',
+        slug: 'deluxe',
         description: 'Phòng cao cấp với view đẹp',
         basePrice: 800000,
-        maxOccupancy: 2,
+        capacity: 2,
         bedType: 'QUEEN',
         size: 35,
         amenities: ['WiFi', 'TV', 'Điều hòa', 'Tủ lạnh', 'Ban công', 'Minibar'],
@@ -255,9 +257,10 @@ async function main() {
       update: {},
       create: {
         name: 'Suite',
+        slug: 'suite',
         description: 'Phòng suite sang trọng với phòng khách riêng',
         basePrice: 1500000,
-        maxOccupancy: 4,
+        capacity: 4,
         bedType: 'KING',
         size: 60,
         amenities: [
@@ -282,7 +285,7 @@ async function main() {
   const deluxeType = roomTypes[1];
   const suiteType = roomTypes[2];
 
-  const rooms = [];
+  const rooms: Promise<any>[] = [];
 
   // Create 5 standard rooms (floor 1)
   for (let i = 1; i <= 5; i++) {

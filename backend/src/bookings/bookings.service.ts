@@ -18,7 +18,7 @@ import { differenceInDays } from 'date-fns';
 
 @Injectable()
 export class BookingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Check room availability for given dates
@@ -126,7 +126,7 @@ export class BookingsService {
 
       // Check for dynamic pricing (PriceCalendar)
       // For simplicity, we'll use base price from room type
-      const pricePerNight = room.roomType.basePrice;
+      const pricePerNight = Number(room.roomType.basePrice);
       const roomTotal = pricePerNight * numberOfNights;
 
       roomPrices.push({
@@ -153,15 +153,11 @@ export class BookingsService {
           promotion.endDate >= now &&
           promotion.isActive
         ) {
+          const discountValue = Number(promotion.discountValue);
           if (promotion.discountType === 'PERCENTAGE') {
-            discountAmount = (subtotal * promotion.discountValue) / 100;
+            discountAmount = (subtotal * discountValue) / 100;
           } else {
-            discountAmount = promotion.discountValue;
-          }
-
-          // Apply max discount if specified
-          if (promotion.maxDiscount && discountAmount > promotion.maxDiscount) {
-            discountAmount = promotion.maxDiscount;
+            discountAmount = discountValue;
           }
         }
       }

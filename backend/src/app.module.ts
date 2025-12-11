@@ -25,18 +25,39 @@ import { RedisModule } from './redis/redis.module';
     PrismaModule,
     LoggerModule.forRoot({
       pinoHttp: {
-        transport:
-          process.env.NODE_ENV !== 'production'
-            ? {
+        transport: {
+          targets: [
+            // Terminal output with pretty formatting
+            {
               target: 'pino-pretty',
+              level: 'debug',
               options: {
                 colorize: true,
                 singleLine: true,
                 translateTime: 'SYS:standard',
                 ignore: 'pid,hostname',
               },
-            }
-            : undefined,
+            },
+            // File output for log management
+            {
+              target: 'pino/file',
+              level: 'info',
+              options: {
+                destination: './logs/app.log',
+                mkdir: true,
+              },
+            },
+            // Error log file
+            {
+              target: 'pino/file',
+              level: 'error',
+              options: {
+                destination: './logs/error.log',
+                mkdir: true,
+              },
+            },
+          ],
+        },
         level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
         autoLogging: true,
       },

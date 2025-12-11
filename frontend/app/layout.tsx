@@ -5,6 +5,7 @@ import { Be_Vietnam_Pro } from "next/font/google";
 import { Navbar } from "@/components/common/navbar";
 import { Footer } from "@/components/common/footer";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 
 const fontSans = Be_Vietnam_Pro({
@@ -49,6 +50,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <Toaster richColors position="bottom-right" />
         </ThemeProvider>
       </body>
     </html>

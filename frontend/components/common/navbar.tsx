@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -11,17 +12,30 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, LogOut, User } from "lucide-react";
+import { Calendar, LogOut, User, Settings } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
+import { useAuthStore } from "@/stores/auth.store";
+import { toast } from "sonner";
 
 export function Navbar() {
-    // Mock user state - in real app this would come from AuthContext
-    // const user = {
-    //     name: "John Doe",
-    //     email: "john@example.com",
-    //     avatar: "https://github.com/shadcn.png",
-    // };
-    const user = null; // Mocking logged out state for now to show Login button as requested
+    const router = useRouter();
+    const { user, isAuthenticated, logout } = useAuthStore();
+
+    // Get user initials for avatar fallback
+    const getInitials = (name: string) => {
+        return name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
+    const handleLogout = () => {
+        logout();
+        toast.success("Đăng xuất thành công!");
+        router.push("/");
+    };
 
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/80 backdrop-blur-md dark:bg-slate-950/80 dark:border-slate-800">
@@ -29,11 +43,13 @@ export function Navbar() {
                 {/* Logo */}
                 <div className="flex items-center gap-2">
                     <Link href="/" className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                            <span className="text-white font-bold text-lg">H</span>
-                        </div>
-                        <span className="text-xl font-bold text-slate-900 dark:text-white hidden sm:inline-block">
-                            HotelPro
+                        <img
+                            src="/logo.png"
+                            alt="Stayzy Logo"
+                            className="h-10 w-10 object-contain"
+                        />
+                        <span className="text-xl font-bold bg-gradient-to-r from-coral-500 to-teal-500 bg-clip-text text-transparent hidden sm:inline-block">
+                            Stayzy
                         </span>
                     </Link>
                 </div>
@@ -42,38 +58,47 @@ export function Navbar() {
                 <div className="flex items-center gap-4">
                     <ThemeToggle />
 
-                    {user ? (
+                    {isAuthenticated && user ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="relative h-10 w-10 rounded-full cursor-pointer">
                                     <Avatar className="h-9 w-9 border border-slate-200">
-                                        <AvatarImage src={user} alt={user} />
-                                        <AvatarFallback>JD</AvatarFallback>
+                                        <AvatarImage src={user.avatarUrl || ""} alt={user.fullName} />
+                                        <AvatarFallback className="bg-blue-600 text-white">
+                                            {getInitials(user.fullName)}
+                                        </AvatarFallback>
                                     </Avatar>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56" align="end" forceMount>
                                 <DropdownMenuLabel className="font-normal">
                                     <div className="flex flex-col space-y-1">
-                                        <p className="text-sm font-medium leading-none">{user}</p>
+                                        <p className="text-sm font-medium leading-none">{user.fullName}</p>
                                         <p className="text-xs leading-none text-muted-foreground">
-                                            {user}
+                                            {user.email}
                                         </p>
                                     </div>
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="cursor-pointer">
+                                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/profile")}>
                                     <User className="mr-2 h-4 w-4" />
-                                    <span>Profile</span>
+                                    <span>Hồ sơ</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="cursor-pointer">
+                                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/dashboard/bookings")}>
                                     <Calendar className="mr-2 h-4 w-4" />
-                                    <span>My Bookings</span>
+                                    <span>Đặt phòng của tôi</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/settings")}>
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    <span>Cài đặt</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer">
+                                <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-600 cursor-pointer"
+                                    onClick={handleLogout}
+                                >
                                     <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Log out</span>
+                                    <span>Đăng xuất</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -81,12 +106,12 @@ export function Navbar() {
                         <div className="flex items-center gap-2">
                             <Link href="/auth/login">
                                 <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer">
-                                    Log In
+                                    Đăng nhập
                                 </Button>
                             </Link>
                             <Link href="/auth/register">
                                 <Button className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
-                                    Sign Up
+                                    Đăng ký
                                 </Button>
                             </Link>
                         </div>
@@ -96,3 +121,4 @@ export function Navbar() {
         </nav>
     );
 }
+

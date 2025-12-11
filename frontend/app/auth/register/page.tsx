@@ -12,6 +12,7 @@ import { Icons } from '@/components/ui/icons';
 import { useAuthStore } from '@/stores/auth.store';
 import { registerSchema, type RegisterFormData } from '@/features/auth/auth.schema';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -32,10 +33,12 @@ export default function RegisterPage() {
       clearError();
       const { confirmPassword, ...registerData } = data;
       await registerUser(registerData);
-      router.push('/');
+      toast.success('Đăng ký thành công!');
+      router.push('/auth/login');
     } catch (err) {
       // Error handled by store
       console.error('Register error:', err);
+      toast.error('Đăng ký thất bại');
     }
   };
 

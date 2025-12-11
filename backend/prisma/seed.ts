@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -336,14 +337,37 @@ async function main() {
   }
 
   await Promise.all(rooms);
-  console.log(`✅ Created ${rooms.length} rooms`);
+  console.log(`Created ${rooms.length} rooms`);
 
-  console.log('🎉 Seed completed successfully!');
+  // Create Admin User
+  console.log(' Creating admin user...');
+
+
+  if (adminRole) {
+    const hashedPassword = await bcrypt.hash('Admin@123', 10);
+
+    await prisma.user.upsert({
+      where: { email: 'admin@stayzy.vn' },
+      update: {},
+      create: {
+        email: 'admin@stayzy.vn',
+        password: hashedPassword,
+        fullName: 'Admin Stayzy',
+        phone: '0123456789',
+        roleId: adminRole.id,
+        status: 'ACTIVE',
+      },
+    });
+
+
+  }
+
+  console.log(' Seed completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e);
+    console.error(' Seed failed:', e);
     process.exit(1);
   })
   .finally(async () => {

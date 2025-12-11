@@ -8,6 +8,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { AuthModule } from './auth/auth.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RolesModule } from './roles/roles.module';
 import { LoggerModule } from 'nestjs-pino';
 import { JwtService } from './jwt/jwt.service';
 import { RedisService } from './redis/redis.service';
@@ -22,6 +23,7 @@ import { RedisModule } from './redis/redis.module';
     ReviewsModule,
     AuthModule,
     PaymentsModule,
+    RolesModule,
     PrismaModule,
     LoggerModule.forRoot({
       pinoHttp: {

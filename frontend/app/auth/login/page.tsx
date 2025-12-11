@@ -13,6 +13,7 @@ import { Icons } from '@/components/ui/icons';
 import { useAuthStore } from '@/stores/auth.store';
 import { loginSchema, type LoginFormData } from '@/features/auth/auth.schema';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,14 +28,37 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  // Function to get redirect path based on user role
+  const getRedirectPath = (roleName?: string): string => {
+    switch (roleName) {
+      case 'ADMIN':
+      case 'MANAGER':
+        return '/admin';
+      case 'RECEPTIONIST':
+        return '/admin/bookings';
+      case 'HOUSEKEEPING':
+        return '/admin/rooms';
+      case 'GUEST':
+      default:
+        return '/';
+    }
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     try {
       clearError();
       await login(data);
-      router.push('/');
+
+      // Get updated user from store after login
+      const { user } = useAuthStore.getState();
+      const redirectPath = getRedirectPath(user?.role?.name);
+
+      toast.success('Đăng nhập thành công!');
+      router.push(redirectPath);
     } catch (err) {
       // Error handled by store
       console.error('Login error:', err);
+      toast.error('Đăng nhập thất bại');
     }
   };
 

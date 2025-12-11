@@ -14,7 +14,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
@@ -23,6 +23,11 @@ export class AuthService {
     });
 
     if (!user) {
+      return null;
+    }
+
+    // Check if user has a password (social login users may not have one)
+    if (!user.password) {
       return null;
     }
 

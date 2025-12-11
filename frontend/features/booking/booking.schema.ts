@@ -3,23 +3,23 @@ import { z } from 'zod';
 export const createBookingSchema = z.object({
   roomIds: z
     .array(z.string())
-    .min(1, { message: 'Vui lòng chÍn ít nh¥t mÙt phòng' }),
-  checkInDate: z.date({ required_error: 'Ngày nh­n phòng là b¯t buÙc' }),
-  checkOutDate: z.date({ required_error: 'Ngày tr£ phòng là b¯t buÙc' }),
+    .min(1, { message: 'Vui long chon it nhat mot phong' }),
+  checkInDate: z.date({ required_error: 'Ngay nhap phong la buoc' }),
+  checkOutDate: z.date({ required_error: 'Ngay tra phong la buoc' }),
   guestName: z
     .string()
-    .min(2, { message: 'Tên khách ph£i có ít nh¥t 2 ký tñ' }),
+    .min(2, { message: 'Ten khach phai it nhat 2 ky tu' }),
   guestEmail: z
     .string()
-    .email({ message: 'Email không hãp lÇ' }),
+    .email({ message: 'Email khong hop le' }),
   guestPhone: z
     .string()
-    .min(10, { message: 'SÑ iÇn tho¡i ph£i có ít nh¥t 10 sÑ' }),
+    .min(10, { message: 'So dien thoai phai it nhat 10 so' }),
   guestIdNumber: z.string().optional(),
   numberOfGuests: z
     .number()
     .int()
-    .positive({ message: 'SÑ l°ãng khách ph£i lÛn h¡n 0' }),
+    .positive({ message: 'So luong khach phai lon hon 0' }),
   specialRequests: z.string().optional(),
   promotionCode: z.string().optional(),
 }).refine(
@@ -30,7 +30,7 @@ export const createBookingSchema = z.object({
     return true;
   },
   {
-    message: 'Ngày tr£ phòng ph£i sau ngày nh­n phòng',
+    message: 'Ngay tra phong phai sau ngay nhap phong',
     path: ['checkOutDate'],
   }
 );
@@ -40,15 +40,15 @@ export type CreateBookingFormData = z.infer<typeof createBookingSchema>;
 export const cancelBookingSchema = z.object({
   cancelReason: z
     .string()
-    .min(10, { message: 'Lý do hçy ph£i có ít nh¥t 10 ký tñ' }),
+    .min(10, { message: 'Ly do huy phai it nhat 10 ky tu' }),
 });
 
 export type CancelBookingFormData = z.infer<typeof cancelBookingSchema>;
 
 export const checkAvailabilitySchema = z.object({
   roomTypeId: z.string().optional(),
-  checkInDate: z.date({ required_error: 'Ngày nh­n phòng là b¯t buÙc' }),
-  checkOutDate: z.date({ required_error: 'Ngày tr£ phòng là b¯t buÙc' }),
+  checkInDate: z.date({ required_error: 'Ngay nhap phong la buoc' }),
+  checkOutDate: z.date({ required_error: 'Ngay tra phong la buoc' }),
   numberOfRooms: z.number().int().positive().default(1).optional(),
 }).refine(
   (data) => {
@@ -58,7 +58,7 @@ export const checkAvailabilitySchema = z.object({
     return true;
   },
   {
-    message: 'Ngày tr£ phòng ph£i sau ngày nh­n phòng',
+    message: 'Ngay tra phong phai sau ngay nhap phong',
     path: ['checkOutDate'],
   }
 );

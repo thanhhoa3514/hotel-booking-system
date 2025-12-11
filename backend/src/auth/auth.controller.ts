@@ -30,7 +30,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @UsePipes(ZodValidationPipe)
-  async login(@Request() req, @Body() loginDto: LoginDto) {
+  async login(@Request() req, @Body() LoginDto: LoginDto) {
     // LocalAuthGuard validates user, so req.user is available
     return this.authService.login(req.user);
   }

@@ -38,8 +38,8 @@ const navItems = [
         icon: BedDouble,
     },
     {
-        title: "Khách hàng",
-        href: "/admin/customers",
+        title: "Quản lý người dùng",
+        href: "/admin/users",
         icon: Users,
     },
     {

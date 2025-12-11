@@ -1,5 +1,11 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  QueryUsersDto,
+  UpdateUserStatusDto,
+  UpdateUserRoleDto,
+} from './dto/user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
@@ -57,27 +63,79 @@ export class UsersService {
     return result;
   }
 
-  async findAll() {
-    const users = await this.prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        phone: true,
-        avatarUrl: true,
-        status: true,
-        roleId: true,
-        createdAt: true,
-        updatedAt: true,
-        // Exclude password
+  async findAll(query: QueryUsersDto) {
+    const { search, status, roleId, page = 1, limit = 20 } = query;
+
+    const where: any = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (roleId) {
+      where.roleId = roleId;
+    }
+
+    if (search) {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search } },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          phone: true,
+          avatarUrl: true,
+          status: true,
+          roleId: true,
+          role: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
+          lastLoginAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-    });
-    return users;
+    };
   }
 
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
+      include: {
+        role: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -110,11 +168,71 @@ export class UsersService {
   async remove(id: string) {
     await this.findOne(id); // Ensure exists
 
-    // Hard delete as per standard CRUD, or soft delete implemented via logic.
-    // Schema doesn't enforce soft delete but has Status.
-    // Let's do hard delete for now as requested "CRUD".
-    return this.prisma.user.delete({
+    // Soft delete by setting status to INACTIVE
+    const deletedUser = await this.prisma.user.update({
       where: { id },
+      data: { status: 'INACTIVE' },
+      include: {
+        role: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
     });
+
+    const { password, ...result } = deletedUser;
+    return result;
+  }
+
+  async updateStatus(id: string, dto: UpdateUserStatusDto) {
+    await this.findOne(id);
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: { status: dto.status },
+      include: {
+        role: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
+    });
+
+    const { password, ...result } = updatedUser;
+    return result;
+  }
+
+  async updateRole(id: string, dto: UpdateUserRoleDto) {
+    // Verify role exists
+    const role = await this.prisma.role.findUnique({
+      where: { id: dto.roleId },
+    });
+
+    if (!role) {
+      throw new NotFoundException('Role not found');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: { roleId: dto.roleId },
+      include: {
+        role: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
+    });
+
+    const { password, ...result } = updatedUser;
+    return result;
   }
 }

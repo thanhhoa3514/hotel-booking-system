@@ -22,3 +22,29 @@ export const UpdateUserSchema = CreateUserSchema.partial();
 
 // Create the DTO class from the schema
 export class UpdateUserDto extends createZodDto(UpdateUserSchema) { }
+
+// Query/Filter DTO for pagination and filtering
+export const QueryUsersSchema = z.object({
+  search: z.string().optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'BANNED']).optional(),
+  roleId: z.string().uuid().optional(),
+  page: z.coerce.number().int().positive().default(1).optional(),
+  limit: z.coerce.number().int().positive().max(100).default(20).optional(),
+});
+
+export class QueryUsersDto extends createZodDto(QueryUsersSchema) { }
+
+// Status update DTO
+export const UpdateUserStatusSchema = z.object({
+  status: z.enum(['ACTIVE', 'INACTIVE', 'BANNED']),
+  reason: z.string().optional(),
+});
+
+export class UpdateUserStatusDto extends createZodDto(UpdateUserStatusSchema) { }
+
+// Role update DTO
+export const UpdateUserRoleSchema = z.object({
+  roleId: z.string().uuid({ message: 'Invalid role ID' }),
+});
+
+export class UpdateUserRoleDto extends createZodDto(UpdateUserRoleSchema) { }

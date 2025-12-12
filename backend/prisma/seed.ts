@@ -362,6 +362,248 @@ async function main() {
 
   }
 
+  // Create Sample Services
+  console.log('📝 Creating sample services...');
+
+  const services = await Promise.all([
+    // Food & Beverage
+    prisma.service.upsert({
+      where: { slug: 'breakfast-buffet' },
+      update: {},
+      create: {
+        name: 'Buffet Sáng',
+        slug: 'breakfast-buffet',
+        description: 'Buffet sáng phong phú với đa dạng món Âu - Á',
+        category: 'FOOD_BEVERAGE',
+        pricingType: 'PER_PERSON',
+        basePrice: 150000,
+        isActive: true,
+        requiresBooking: false,
+        operatingHours: {
+          monday: { open: '06:00', close: '10:00' },
+          tuesday: { open: '06:00', close: '10:00' },
+          wednesday: { open: '06:00', close: '10:00' },
+          thursday: { open: '06:00', close: '10:00' },
+          friday: { open: '06:00', close: '10:00' },
+          saturday: { open: '06:00', close: '11:00' },
+          sunday: { open: '06:00', close: '11:00' },
+        },
+        displayOrder: 1,
+      },
+    }),
+    prisma.service.upsert({
+      where: { slug: 'room-service-coffee' },
+      update: {},
+      create: {
+        name: 'Cà phê phục vụ tại phòng',
+        slug: 'room-service-coffee',
+        description: 'Cà phê và trà cao cấp giao tận phòng',
+        category: 'ROOM_SERVICE',
+        pricingType: 'PER_ITEM',
+        basePrice: 50000,
+        isActive: true,
+        requiresBooking: false,
+        operatingHours: {
+          monday: { open: '06:00', close: '23:00' },
+          tuesday: { open: '06:00', close: '23:00' },
+          wednesday: { open: '06:00', close: '23:00' },
+          thursday: { open: '06:00', close: '23:00' },
+          friday: { open: '06:00', close: '23:00' },
+          saturday: { open: '06:00', close: '23:00' },
+          sunday: { open: '06:00', close: '23:00' },
+        },
+        displayOrder: 2,
+      },
+    }),
+
+    // Spa & Wellness
+    prisma.service.upsert({
+      where: { slug: 'massage-60min' },
+      update: {},
+      create: {
+        name: 'Massage thư giãn (60 phút)',
+        slug: 'massage-60min',
+        description: 'Massage toàn thân với tinh dầu thư giãn',
+        category: 'SPA_WELLNESS',
+        pricingType: 'FIXED',
+        basePrice: 500000,
+        isActive: true,
+        requiresBooking: true,
+        maxCapacity: 4,
+        duration: 60,
+        operatingHours: {
+          monday: { open: '09:00', close: '21:00' },
+          tuesday: { open: '09:00', close: '21:00' },
+          wednesday: { open: '09:00', close: '21:00' },
+          thursday: { open: '09:00', close: '21:00' },
+          friday: { open: '09:00', close: '22:00' },
+          saturday: { open: '09:00', close: '22:00' },
+          sunday: { open: '09:00', close: '21:00' },
+        },
+        displayOrder: 3,
+      },
+    }),
+    prisma.service.upsert({
+      where: { slug: 'spa-package' },
+      update: {},
+      create: {
+        name: 'Gói Spa Cao Cấp (90 phút)',
+        slug: 'spa-package',
+        description: 'Gói trọn gói: massage + chăm sóc da mặt + ngâm chân',
+        category: 'SPA_WELLNESS',
+        pricingType: 'FIXED',
+        basePrice: 800000,
+        isActive: true,
+        requiresBooking: true,
+        maxCapacity: 2,
+        duration: 90,
+        operatingHours: {
+          monday: { open: '10:00', close: '20:00' },
+          tuesday: { open: '10:00', close: '20:00' },
+          wednesday: { open: '10:00', close: '20:00' },
+          thursday: { open: '10:00', close: '20:00' },
+          friday: { open: '10:00', close: '20:00' },
+          saturday: { open: '10:00', close: '20:00' },
+          sunday: { open: '10:00', close: '20:00' },
+        },
+        displayOrder: 4,
+      },
+    }),
+
+    // Recreation
+    prisma.service.upsert({
+      where: { slug: 'gym-access' },
+      update: {},
+      create: {
+        name: 'Phòng Gym',
+        slug: 'gym-access',
+        description: 'Sử dụng phòng gym với thiết bị hiện đại',
+        category: 'RECREATION',
+        pricingType: 'PER_HOUR',
+        basePrice: 100000,
+        isActive: true,
+        requiresBooking: false,
+        maxCapacity: 10,
+        operatingHours: {
+          monday: { open: '05:00', close: '22:00' },
+          tuesday: { open: '05:00', close: '22:00' },
+          wednesday: { open: '05:00', close: '22:00' },
+          thursday: { open: '05:00', close: '22:00' },
+          friday: { open: '05:00', close: '22:00' },
+          saturday: { open: '06:00', close: '22:00' },
+          sunday: { open: '06:00', close: '22:00' },
+        },
+        displayOrder: 5,
+      },
+    }),
+    prisma.service.upsert({
+      where: { slug: 'pool-access' },
+      update: {},
+      create: {
+        name: 'Hồ Bơi',
+        slug: 'pool-access',
+        description: 'Hồ bơi ngoài trời với view đẹp',
+        category: 'RECREATION',
+        pricingType: 'FIXED',
+        basePrice: 200000,
+        isActive: true,
+        requiresBooking: false,
+        maxCapacity: 30,
+        operatingHours: {
+          monday: { open: '06:00', close: '20:00' },
+          tuesday: { open: '06:00', close: '20:00' },
+          wednesday: { open: '06:00', close: '20:00' },
+          thursday: { open: '06:00', close: '20:00' },
+          friday: { open: '06:00', close: '21:00' },
+          saturday: { open: '06:00', close: '21:00' },
+          sunday: { open: '06:00', close: '21:00' },
+        },
+        displayOrder: 6,
+      },
+    }),
+
+    // Transportation
+    prisma.service.upsert({
+      where: { slug: 'airport-pickup' },
+      update: {},
+      create: {
+        name: 'Đón sân bay',
+        slug: 'airport-pickup',
+        description: 'Dịch vụ đón tiễn sân bay bằng xe riêng',
+        category: 'TRANSPORTATION',
+        pricingType: 'FIXED',
+        basePrice: 300000,
+        isActive: true,
+        requiresBooking: true,
+        operatingHours: {
+          monday: { open: '00:00', close: '23:59' },
+          tuesday: { open: '00:00', close: '23:59' },
+          wednesday: { open: '00:00', close: '23:59' },
+          thursday: { open: '00:00', close: '23:59' },
+          friday: { open: '00:00', close: '23:59' },
+          saturday: { open: '00:00', close: '23:59' },
+          sunday: { open: '00:00', close: '23:59' },
+        },
+        displayOrder: 7,
+      },
+    }),
+
+    // Laundry
+    prisma.service.upsert({
+      where: { slug: 'laundry-service' },
+      update: {},
+      create: {
+        name: 'Giặt ủi',
+        slug: 'laundry-service',
+        description: 'Dịch vụ giặt ủi nhanh trong ngày',
+        category: 'LAUNDRY',
+        pricingType: 'PER_ITEM',
+        basePrice: 30000,
+        isActive: true,
+        requiresBooking: false,
+        operatingHours: {
+          monday: { open: '08:00', close: '18:00' },
+          tuesday: { open: '08:00', close: '18:00' },
+          wednesday: { open: '08:00', close: '18:00' },
+          thursday: { open: '08:00', close: '18:00' },
+          friday: { open: '08:00', close: '18:00' },
+          saturday: { open: '08:00', close: '17:00' },
+          sunday: { isClosed: true },
+        },
+        displayOrder: 8,
+      },
+    }),
+
+    // Business
+    prisma.service.upsert({
+      where: { slug: 'meeting-room' },
+      update: {},
+      create: {
+        name: 'Phòng họp',
+        slug: 'meeting-room',
+        description: 'Phòng họp với thiết bị projector và whiteboard',
+        category: 'BUSINESS',
+        pricingType: 'PER_HOUR',
+        basePrice: 200000,
+        isActive: true,
+        requiresBooking: true,
+        maxCapacity: 12,
+        operatingHours: {
+          monday: { open: '08:00', close: '18:00' },
+          tuesday: { open: '08:00', close: '18:00' },
+          wednesday: { open: '08:00', close: '18:00' },
+          thursday: { open: '08:00', close: '18:00' },
+          friday: { open: '08:00', close: '18:00' },
+          saturday: { isClosed: true },
+          sunday: { isClosed: true },
+        },
+        displayOrder: 9,
+      },
+    }),
+  ]);
+
+  console.log(`✅ Created ${services.length} sample services`);
+
   console.log(' Seed completed successfully!');
 }
 

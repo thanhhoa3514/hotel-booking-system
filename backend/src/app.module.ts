@@ -11,6 +11,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RolesModule } from './roles/roles.module';
 import { StripeModule } from './stripe/stripe.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ServicesModule } from './services/services.module';
+import { ServiceBookingsModule } from './service-bookings/service-bookings.module';
 import { BullModule } from '@nestjs/bull';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
@@ -41,6 +43,8 @@ import { RedisModule } from './redis/redis.module';
     RolesModule,
     StripeModule,
     NotificationsModule,
+    ServicesModule,
+    ServiceBookingsModule,
     PrismaModule,
     LoggerModule.forRoot({
       pinoHttp: {

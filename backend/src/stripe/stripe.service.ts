@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class StripeService {
@@ -11,6 +12,7 @@ export class StripeService {
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService,
+    private notificationsService: NotificationsService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!secretKey) {
@@ -123,7 +125,7 @@ export class StripeService {
     }
 
     // Update booking status to CONFIRMED
-    await this.prisma.booking.update({
+    const updatedBooking = await this.prisma.booking.update({
       where: { id: bookingId },
       data: {
         status: 'CONFIRMED',
@@ -143,6 +145,9 @@ export class StripeService {
     });
 
     this.logger.log(`Payment successful for booking ${bookingId}`);
+
+    // Send booking confirmation notifications
+    await this.notificationsService.sendBookingConfirmation(updatedBooking);
   }
 
   /**

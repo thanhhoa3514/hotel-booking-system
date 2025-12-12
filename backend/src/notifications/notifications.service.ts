@@ -13,8 +13,13 @@ export class NotificationsService {
 
   /**
    * Send booking confirmation notifications (email + SMS)
+   * @param booking - Booking data
+   * @param throwOnError - If true, rethrows errors for retry logic (default: false)
    */
-  async sendBookingConfirmation(booking: any): Promise<void> {
+  async sendBookingConfirmation(
+    booking: any,
+    throwOnError = false,
+  ): Promise<void> {
     this.logger.log(
       `Sending booking confirmation for ${booking.bookingCode}`,
     );
@@ -36,14 +41,23 @@ export class NotificationsService {
         `Failed to send booking confirmation for ${booking.bookingCode}:`,
         error,
       );
-      // Don't throw - notification failure shouldn't break the booking process
+      // Rethrow if requested (for job retry logic)
+      if (throwOnError) {
+        throw error;
+      }
+      // Otherwise don't throw - notification failure shouldn't break the booking process
     }
   }
 
   /**
    * Send booking reminder notifications (email + SMS)
+   * @param booking - Booking data
+   * @param throwOnError - If true, rethrows errors for retry logic (default: false)
    */
-  async sendBookingReminder(booking: any): Promise<void> {
+  async sendBookingReminder(
+    booking: any,
+    throwOnError = false,
+  ): Promise<void> {
     this.logger.log(`Sending booking reminder for ${booking.bookingCode}`);
 
     try {
@@ -63,6 +77,10 @@ export class NotificationsService {
         `Failed to send booking reminder for ${booking.bookingCode}:`,
         error,
       );
+      // Rethrow if requested (for job retry logic)
+      if (throwOnError) {
+        throw error;
+      }
     }
   }
 }

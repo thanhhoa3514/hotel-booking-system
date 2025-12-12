@@ -3,6 +3,7 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
+    "assets": ["src/notifications/templates/**/*.hbs"],
     "deleteOutDir": true
   }
 }

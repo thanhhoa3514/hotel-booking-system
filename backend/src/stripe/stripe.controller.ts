@@ -95,10 +95,9 @@ export class StripeController {
   ) {
     const session = await this.stripeService.retrieveSession(sessionId);
     // Verify the session belongs to the requesting user
-+    if (session.metadata?.userId !== userId) {
-+      throw new ForbiddenException('Unauthorized access to session');
-        return;
-+    }
+    if (session.metadata?.userId !== userId) {
+      throw new ForbiddenException('Unauthorized access to session');
+    }
     return {
       status: session.payment_status,
       customerEmail: session.customer_email,

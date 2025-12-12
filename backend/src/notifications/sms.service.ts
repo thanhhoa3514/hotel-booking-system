@@ -57,11 +57,14 @@ export class SmsService {
   }
 
   async sendBookingConfirmationSMS(booking: BookingData): Promise<void> {
+    const reminderHoursRaw = this.configService.get('REMINDER_HOURS_BEFORE');
     const reminderHours =
-      this.configService.get<number>('REMINDER_HOURS_BEFORE') || 1;
+      Number.isFinite(Number(reminderHoursRaw)) && Number(reminderHoursRaw) > 0
+        ? Number(reminderHoursRaw)
+        : 1;
     const reminderText = this.formatReminderTime(reminderHours);
 
-    const message = `🎉 Booking Confirmed!
+    const message = ` Booking Confirmed!
 
 Booking Code: ${booking.bookingCode}
 Check-in: ${format(new Date(booking.checkInDate), 'MMM dd, yyyy')}
@@ -78,11 +81,14 @@ Thank you for choosing us! You'll receive a reminder ${reminderText} before chec
     const checkInTime = new Date(booking.checkInDate);
     checkInTime.setHours(14, 0, 0, 0); // 2:00 PM
 
+    const reminderHoursRaw = this.configService.get('REMINDER_HOURS_BEFORE');
     const reminderHours =
-      this.configService.get<number>('REMINDER_HOURS_BEFORE') || 1;
+      Number.isFinite(Number(reminderHoursRaw)) && Number(reminderHoursRaw) > 0
+        ? Number(reminderHoursRaw)
+        : 1;
     const reminderText = this.formatReminderTime(reminderHours);
 
-    const message = `⏰ Check-in Reminder!
+    const message = ` Check-in Reminder!
 
 Your check-in is in ${reminderText}!
 

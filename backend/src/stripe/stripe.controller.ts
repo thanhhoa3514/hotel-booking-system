@@ -8,6 +8,7 @@ import {
   Get,
   Query,
   Logger,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { StripeService } from './stripe.service';
@@ -61,7 +62,9 @@ export class StripeController {
     try {
       event = this.stripeService.constructEventFromPayload(payload, signature);
     } catch (err) {
-      this.logger.error(`Webhook signature verification failed: ${err.message}`);
+      this.logger.error(
+        `Webhook signature verification failed: ${err.message}`,
+      );
       throw new Error(`Webhook Error: ${err.message}`);
     }
 
@@ -86,8 +89,15 @@ export class StripeController {
    */
   @Get('session')
   @UseGuards(JwtAuthGuard)
-  async getSession(@Query('session_id') sessionId: string) {
+  async getSession(
+    @Query('session_id') sessionId: string,
+    @CurrentUser('id') userId: string,
+  ) {
     const session = await this.stripeService.retrieveSession(sessionId);
+    // Verify the session belongs to the requesting user
+    if (session.metadata?.userId !== userId) {
+      throw new ForbiddenException('Unauthorized access to session');
+    }
     return {
       status: session.payment_status,
       customerEmail: session.customer_email,

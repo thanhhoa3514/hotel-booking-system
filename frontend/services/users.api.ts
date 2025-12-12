@@ -1,5 +1,5 @@
-import api from './api';
-import { User, Role } from '@/types/auth';
+import { api } from "./api";
+import { User } from "@/types/auth";
 
 export interface UsersResponse {
   data: User[];
@@ -13,7 +13,7 @@ export interface UsersResponse {
 
 export interface UsersFilters {
   search?: string;
-  status?: 'ACTIVE' | 'INACTIVE' | 'BANNED';
+  status?: "ACTIVE" | "INACTIVE" | "BANNED";
   roleId?: string;
   page?: number;
   limit?: number;
@@ -35,7 +35,7 @@ export interface UpdateUserDto {
 }
 
 export interface UpdateUserStatusDto {
-  status: 'ACTIVE' | 'INACTIVE' | 'BANNED';
+  status: "ACTIVE" | "INACTIVE" | "BANNED";
   reason?: string;
 }
 
@@ -50,11 +50,11 @@ export const usersApi = {
   getUsers: async (filters?: UsersFilters): Promise<UsersResponse> => {
     const params = new URLSearchParams();
 
-    if (filters?.search) params.append('search', filters.search);
-    if (filters?.status) params.append('status', filters.status);
-    if (filters?.roleId) params.append('roleId', filters.roleId);
-    if (filters?.page) params.append('page', filters.page.toString());
-    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.search) params.append("search", filters.search);
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.roleId) params.append("roleId", filters.roleId);
+    if (filters?.page) params.append("page", filters.page.toString());
+    if (filters?.limit) params.append("limit", filters.limit.toString());
 
     const response = await api.get<UsersResponse>(
       `/users?${params.toString()}`
@@ -74,7 +74,7 @@ export const usersApi = {
    * Create new user (admin/manager only)
    */
   createUser: async (data: CreateUserDto): Promise<User> => {
-    const response = await api.post<User>('/users', data);
+    const response = await api.post<User>("/users", data);
     return response.data;
   },
 

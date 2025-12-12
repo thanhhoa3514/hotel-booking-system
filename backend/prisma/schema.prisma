@@ -86,6 +86,7 @@ model User {
   // Business Relations
   bookings      Booking[]
   reviews       Review[]
+  serviceBookings ServiceBooking[] @relation("AssignedStaff")
 
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
@@ -305,6 +306,7 @@ model Booking {
   rooms           BookingRoom[]
   payments        Payment[]
   review          Review?
+  serviceBookings ServiceBooking[]
 
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
@@ -494,4 +496,133 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+enum ServiceCategory {
+  FOOD_BEVERAGE      
+  SPA_WELLNESS       
+  RECREATION         
+  TRANSPORTATION    
+  BUSINESS           
+  LAUNDRY           
+  CONCIERGE         
+  ROOM_SERVICE      
+  OTHER
+}
+
+enum ServicePricingType {
+  FIXED              
+  PER_HOUR          
+  PER_PERSON        
+  PER_ITEM          
+}
+
+enum ServiceBookingStatus {
+  PENDING           
+  CONFIRMED         
+  IN_PROGRESS       
+  COMPLETED         
+  CANCELLED         
+  NO_SHOW          
+}
+// ==========================================
+// MODELS
+// ==========================================
+
+model Service {
+  id              String             @id @default(uuid())
+  name            String
+  slug            String             @unique
+  description     String?            @db.Text
+  category        ServiceCategory
+  
+  // Pricing
+  pricingType     ServicePricingType @map("pricing_type")
+  basePrice       Decimal            @map("base_price") @db.Decimal(10, 2)
+  
+  // Availability
+  isActive        Boolean            @default(true) @map("is_active")
+  requiresBooking Boolean            @default(false) @map("requires_booking") // Cần đặt trước?
+  maxCapacity     Int?               @map("max_capacity") // Sức chứa tối đa (cho gym, pool...)
+  
+  // Operating Hours (JSON)
+  // Example: {"monday": {"open": "08:00", "close": "22:00"}, ...}
+  operatingHours  Json?              @map("operating_hours")
+  
+  // Duration (minutes) - for services that have fixed duration
+  duration        Int?               // 60 = 1 hour massage
+  
+  // Display
+  imageUrl        String?            @map("image_url")
+  displayOrder    Int                @default(0) @map("display_order")
+  
+  // Relations
+  bookings        ServiceBooking[]
+  
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  @@index([category, isActive])
+  @@index([isActive, displayOrder])
+  @@map("services")
+}
+
+
+model ServiceBooking {
+  id              String                @id @default(uuid())
+  bookingCode     String                @unique @map("booking_code") // SV20250101001
+  
+  // Service Info
+  serviceId       String                @map("service_id")
+  service         Service               @relation(fields: [serviceId], references: [id])
+  
+  // Guest Info (linked to room booking for charge-to-room)
+  bookingId       String                @map("booking_id") // Required - must link to room booking
+  booking         Booking               @relation(fields: [bookingId], references: [id])
+
+  guestName       String                @map("guest_name")
+  guestPhone      String                @map("guest_phone")
+  roomNumber      String                @map("room_number") // Derived from booking rooms
+  
+  // Booking Details
+  scheduledDate   DateTime              @map("scheduled_date") @db.Date
+  scheduledTime   DateTime              @map("scheduled_time") // Thời gian cụ thể
+  duration        Int?                  // Duration in minutes (override service default)
+  quantity        Int                   @default(1) // Số lượng (số người, số món...)
+  
+  // Pricing Snapshot
+  unitPrice       Decimal               @map("unit_price") @db.Decimal(10, 2)
+  totalPrice      Decimal               @map("total_price") @db.Decimal(10, 2)
+  
+  // Status
+  status          ServiceBookingStatus  @default(PENDING)
+  
+  // Completion
+  startedAt       DateTime?             @map("started_at")
+  completedAt     DateTime?             @map("completed_at")
+  
+  // Staff Assignment
+  assignedStaffId String?               @map("assigned_staff_id") // User ID của staff
+  assignedStaff   User?                 @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
+  
+  // Notes
+  specialRequests String?               @db.Text @map("special_requests")
+  staffNotes      String?               @db.Text @map("staff_notes")
+  
+  // Cancellation
+  cancelledAt     DateTime?             @map("cancelled_at")
+  cancelReason    String?               @db.Text @map("cancel_reason")
+
+  // Payment - Charged to room booking, paid at checkout
+  isChargedToRoom Boolean               @default(true) @map("is_charged_to_room")
+  chargedAt       DateTime?             @map("charged_at") // When added to room bill
+
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  @@index([serviceId, scheduledDate])
+  @@index([bookingId])
+  @@index([status, scheduledDate])
+  @@index([assignedStaffId])
+  @@map("service_bookings")
 }

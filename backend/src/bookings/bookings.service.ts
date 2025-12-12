@@ -680,6 +680,32 @@ export class BookingsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      // Cancel all pending/confirmed service bookings when room booking cancelled
+      const serviceBookings = await tx.serviceBooking.findMany({
+        where: {
+          bookingId: id,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+        },
+      });
+
+      // Cancel each service booking
+      for (const sb of serviceBookings) {
+        await tx.serviceBooking.update({
+          where: { id: sb.id },
+          data: {
+            status: 'CANCELLED',
+            cancelledAt: new Date(),
+            cancelReason: 'Room booking cancelled',
+          },
+        });
+      }
+
+      // Reset service charge on booking
+      await tx.booking.update({
+        where: { id },
+        data: { serviceCharge: 0 },
+      });
+
       // Update booking status
       const updatedBooking = await tx.booking.update({
         where: { id },
@@ -719,6 +745,43 @@ export class BookingsService {
 
       return updatedBooking;
     });
+  }
+
+  /**
+   * Get booking with service charges for checkout
+   */
+  async getBookingForCheckout(id: string) {
+    const booking = await this.findOne(id);
+
+    // Get all service bookings
+    const serviceBookings = await this.prisma.serviceBooking.findMany({
+      where: {
+        bookingId: id,
+        status: { notIn: ['CANCELLED'] },
+      },
+      include: {
+        service: {
+          select: {
+            name: true,
+            category: true,
+          },
+        },
+      },
+    });
+
+    return {
+      ...booking,
+      serviceBookings,
+      breakdown: {
+        roomCharges: booking.subtotal,
+        serviceCharges: booking.serviceCharge,
+        taxAmount: booking.taxAmount,
+        discountAmount: booking.discountAmount,
+        totalAmount: booking.totalAmount,
+        paidAmount: booking.paidAmount,
+        balanceDue: Number(booking.totalAmount) - Number(booking.paidAmount),
+      },
+    };
   }
 
   /**

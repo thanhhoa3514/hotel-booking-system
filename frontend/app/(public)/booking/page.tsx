@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ const ROOM_TYPES = [
     { id: "3", name: "Standard Double Room", price: 149, image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400" },
 ];
 
-export default function BookingPage() {
+function BookingContent() {
     const searchParams = useSearchParams();
     const preselectedRoom = searchParams.get("roomType");
 
@@ -358,5 +358,17 @@ export default function BookingPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function BookingPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        }>
+            <BookingContent />
+        </Suspense>
     );
 }

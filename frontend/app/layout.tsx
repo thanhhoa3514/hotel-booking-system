@@ -5,6 +5,7 @@ import { Be_Vietnam_Pro } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { LayoutWrapper } from "@/components/common/layout-wrapper";
+import { Providers } from "@/components/providers";
 
 
 const fontSans = Be_Vietnam_Pro({
@@ -24,6 +25,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: {
     default: "Stayzy - Đặt Phòng Khách Sạn Thông Minh",
     template: "%s | Stayzy",
@@ -58,17 +60,19 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased ${fontSans.variable} min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <LayoutWrapper>
-            {children}
-          </LayoutWrapper>
-          <Toaster richColors position="bottom-right" />
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <LayoutWrapper>
+              {children}
+            </LayoutWrapper>
+            <Toaster richColors position="bottom-right" />
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

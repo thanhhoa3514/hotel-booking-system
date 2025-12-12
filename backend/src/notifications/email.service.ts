@@ -77,15 +77,12 @@ export class EmailService {
         month: 'long',
         day: 'numeric',
       }),
-      checkOutDate: new Date(booking.checkOutDate).toLocaleDateString(
-        'en-US',
-        {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        },
-      ),
+      checkOutDate: new Date(booking.checkOutDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
       numberOfGuests: booking.numberOfGuests,
       numberOfNights: booking.numberOfNights,
       totalAmount: Number(booking.totalAmount).toFixed(2),
@@ -105,8 +102,11 @@ export class EmailService {
     checkInDateTime.setHours(14, 0, 0, 0); // Set to 2:00 PM
 
     // Get configurable reminder time
+    const reminderHoursRaw = this.configService.get('REMINDER_HOURS_BEFORE');
     const reminderHours =
-      this.configService.get<number>('REMINDER_HOURS_BEFORE') || 1;
+      Number.isFinite(Number(reminderHoursRaw)) && Number(reminderHoursRaw) > 0
+        ? Number(reminderHoursRaw)
+        : 1;
     const reminderTimeText = this.formatReminderTime(reminderHours);
 
     const context = {

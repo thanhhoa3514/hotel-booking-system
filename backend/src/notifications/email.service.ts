@@ -104,6 +104,11 @@ export class EmailService {
     const checkInDateTime = new Date(booking.checkInDate);
     checkInDateTime.setHours(14, 0, 0, 0); // Set to 2:00 PM
 
+    // Get configurable reminder time
+    const reminderHours =
+      this.configService.get<number>('REMINDER_HOURS_BEFORE') || 1;
+    const reminderTimeText = this.formatReminderTime(reminderHours);
+
     const context = {
       guestName: booking.guestName,
       bookingCode: booking.bookingCode,
@@ -118,6 +123,7 @@ export class EmailService {
         minute: '2-digit',
       }),
       numberOfGuests: booking.numberOfGuests,
+      reminderTimeText,
       dashboardUrl: `${this.configService.get<string>('FRONTEND_URL')}/dashboard/bookings`,
     };
 
@@ -127,5 +133,17 @@ export class EmailService {
       template: 'booking-reminder',
       context,
     });
+  }
+
+  /**
+   * Format reminder time into human-readable text
+   */
+  private formatReminderTime(hours: number): string {
+    if (hours >= 1) {
+      return hours === 1 ? '1 Hour' : `${hours} Hours`;
+    } else {
+      const minutes = Math.round(hours * 60);
+      return minutes === 1 ? '1 Minute' : `${minutes} Minutes`;
+    }
   }
 }

@@ -50,8 +50,8 @@ export class ReminderProcessor {
         return;
       }
 
-      // Send the reminder
-      await this.notificationsService.sendBookingReminder(booking);
+      // Send the reminder with error rethrowing enabled for Bull retry logic
+      await this.notificationsService.sendBookingReminder(booking, true);
 
       this.logger.log(
         `Successfully sent reminder for booking ${booking.bookingCode}`,
@@ -61,7 +61,7 @@ export class ReminderProcessor {
         `Failed to process reminder for booking ${job.data.bookingId}:`,
         error,
       );
-      throw error; // Re-throw to trigger retry
+      throw error; // Re-throw to trigger Bull retry mechanism
     }
   }
 }

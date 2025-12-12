@@ -1,4 +1,4 @@
-import api from './api';
+import { api } from "./api";
 
 export interface CreateCheckoutSessionResponse {
   sessionId: string;
@@ -10,11 +10,11 @@ export const stripeApi = {
    * Create a Stripe checkout session for a booking
    */
   createCheckoutSession: async (
-    bookingId: string,
+    bookingId: string
   ): Promise<CreateCheckoutSessionResponse> => {
     const response = await api.post<CreateCheckoutSessionResponse>(
-      '/stripe/create-checkout-session',
-      { bookingId },
+      "/stripe/create-checkout-session",
+      { bookingId }
     );
     return response.data;
   },
@@ -23,7 +23,9 @@ export const stripeApi = {
    * Get session details after payment
    */
   getSession: async (sessionId: string) => {
-    const response = await api.get(`/stripe/session?session_id=${sessionId}`);
+    const response = await api.get("/stripe/session", {
+      params: { session_id: sessionId },
+    });
     return response.data;
   },
 };

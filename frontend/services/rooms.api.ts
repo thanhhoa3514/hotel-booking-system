@@ -1,6 +1,6 @@
-import api from './api';
-import { Room, RoomType } from '@/types/room';
-import { CheckAvailabilityDto, AvailabilityResponse } from '@/types/booking';
+import { api } from "./api";
+import { Room, RoomType } from "@/types/room";
+import { CheckAvailabilityDto, AvailabilityResponse } from "@/types/booking";
 
 export const roomsApi = {
   /**
@@ -12,9 +12,9 @@ export const roomsApi = {
     floor?: number;
   }): Promise<Room[]> => {
     const params = new URLSearchParams();
-    if (filters?.typeId) params.append('typeId', filters.typeId);
-    if (filters?.status) params.append('status', filters.status);
-    if (filters?.floor) params.append('floor', filters.floor.toString());
+    if (filters?.typeId) params.append("typeId", filters.typeId);
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.floor) params.append("floor", filters.floor.toString());
 
     const response = await api.get<Room[]>(`/rooms?${params.toString()}`);
     return response.data;
@@ -32,7 +32,7 @@ export const roomsApi = {
    * Get all room types
    */
   getRoomTypes: async (): Promise<RoomType[]> => {
-    const response = await api.get<RoomType[]>('/room-types');
+    const response = await api.get<RoomType[]>("/room-types");
     return response.data;
   },
 
@@ -51,7 +51,7 @@ export const roomsApi = {
     data: CheckAvailabilityDto
   ): Promise<AvailabilityResponse> => {
     const response = await api.post<AvailabilityResponse>(
-      '/bookings/check-availability',
+      "/bookings/check-availability",
       data
     );
     return response.data;

@@ -1,9 +1,5 @@
-import api from './api';
-import {
-  Booking,
-  CreateBookingDto,
-  UpdateBookingDto,
-} from '@/types/booking';
+import { api } from "./api";
+import { Booking, CreateBookingDto, UpdateBookingDto } from "@/types/booking";
 
 export interface BookingsResponse {
   data: Booking[];
@@ -29,7 +25,7 @@ export const bookingsApi = {
    * Create a new booking
    */
   createBooking: async (data: CreateBookingDto): Promise<Booking> => {
-    const response = await api.post<Booking>('/bookings', data);
+    const response = await api.post<Booking>("/bookings", data);
     return response.data;
   },
 
@@ -39,14 +35,13 @@ export const bookingsApi = {
   getBookings: async (filters?: BookingsFilters): Promise<BookingsResponse> => {
     const params = new URLSearchParams();
 
-    if (filters?.status) params.append('status', filters.status);
-    if (filters?.userId) params.append('userId', filters.userId);
-    if (filters?.checkInDate)
-      params.append('checkInDate', filters.checkInDate);
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.userId) params.append("userId", filters.userId);
+    if (filters?.checkInDate) params.append("checkInDate", filters.checkInDate);
     if (filters?.checkOutDate)
-      params.append('checkOutDate', filters.checkOutDate);
-    if (filters?.page) params.append('page', filters.page.toString());
-    if (filters?.limit) params.append('limit', filters.limit.toString());
+      params.append("checkOutDate", filters.checkOutDate);
+    if (filters?.page) params.append("page", filters.page.toString());
+    if (filters?.limit) params.append("limit", filters.limit.toString());
 
     const response = await api.get<BookingsResponse>(
       `/bookings?${params.toString()}`
@@ -76,10 +71,7 @@ export const bookingsApi = {
   /**
    * Cancel booking
    */
-  cancelBooking: async (
-    id: string,
-    cancelReason: string
-  ): Promise<Booking> => {
+  cancelBooking: async (id: string, cancelReason: string): Promise<Booking> => {
     const response = await api.delete<Booking>(`/bookings/${id}/cancel`, {
       data: { cancelReason },
     });

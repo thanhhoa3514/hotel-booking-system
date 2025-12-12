@@ -1,7 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Twilio } from 'twilio';
+import { format } from 'date-fns';
 
+interface BookingData {
+  bookingCode: string;
+  checkInDate: Date | string;
+  checkOutDate: Date | string;
+  numberOfGuests: number;
+  totalAmount: number | string;
+  guestPhone: string;
+}
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
@@ -16,7 +25,8 @@ export class SmsService {
     if (this.isEnabled) {
       const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
       const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
-      this.fromNumber = this.configService.get<string>('TWILIO_PHONE_NUMBER') || '';
+      this.fromNumber =
+        this.configService.get<string>('TWILIO_PHONE_NUMBER') || '';
 
       if (!accountSid || !authToken || !this.fromNumber) {
         throw new Error('Twilio credentials are not properly configured');
@@ -39,19 +49,19 @@ export class SmsService {
         to,
       });
 
-      this.logger.log(`SMS sent: ${result.sid} to ${to}`);
+      this.logger.log(`SMS sent: ${result.sid} to`);
     } catch (error) {
-      this.logger.error(`Failed to send SMS to ${to}:`, error);
+      this.logger.error(`Failed to send SMS to:`, error);
       throw error;
     }
   }
 
-  async sendBookingConfirmationSMS(booking: any): Promise<void> {
+  async sendBookingConfirmationSMS(booking: BookingData): Promise<void> {
     const message = `🎉 Booking Confirmed!
 
 Booking Code: ${booking.bookingCode}
-Check-in: ${new Date(booking.checkInDate).toLocaleDateString()}
-Check-out: ${new Date(booking.checkOutDate).toLocaleDateString()}
+Check-in: ${format(new Date(booking.checkInDate), 'MMM dd, yyyy')}
+Check-out: ${format(new Date(booking.checkOutDate), 'MMM dd, yyyy')}
 Guests: ${booking.numberOfGuests}
 Total: $${Number(booking.totalAmount).toFixed(2)}
 

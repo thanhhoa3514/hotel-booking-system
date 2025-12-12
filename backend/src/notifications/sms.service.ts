@@ -57,6 +57,10 @@ export class SmsService {
   }
 
   async sendBookingConfirmationSMS(booking: BookingData): Promise<void> {
+    const reminderHours =
+      this.configService.get<number>('REMINDER_HOURS_BEFORE') || 1;
+    const reminderText = this.formatReminderTime(reminderHours);
+
     const message = `🎉 Booking Confirmed!
 
 Booking Code: ${booking.bookingCode}
@@ -65,7 +69,7 @@ Check-out: ${format(new Date(booking.checkOutDate), 'MMM dd, yyyy')}
 Guests: ${booking.numberOfGuests}
 Total: $${Number(booking.totalAmount).toFixed(2)}
 
-Thank you for choosing us! You'll receive a reminder 1 hour before check-in.`;
+Thank you for choosing us! You'll receive a reminder ${reminderText} before check-in.`;
 
     await this.sendSMS(booking.guestPhone, message);
   }
@@ -74,9 +78,13 @@ Thank you for choosing us! You'll receive a reminder 1 hour before check-in.`;
     const checkInTime = new Date(booking.checkInDate);
     checkInTime.setHours(14, 0, 0, 0); // 2:00 PM
 
+    const reminderHours =
+      this.configService.get<number>('REMINDER_HOURS_BEFORE') || 1;
+    const reminderText = this.formatReminderTime(reminderHours);
+
     const message = `⏰ Check-in Reminder!
 
-Your check-in is in 1 hour!
+Your check-in is in ${reminderText}!
 
 Booking Code: ${booking.bookingCode}
 Time: ${checkInTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -85,5 +93,17 @@ Date: ${checkInTime.toLocaleDateString()}
 Please bring a valid ID. We're excited to welcome you!`;
 
     await this.sendSMS(booking.guestPhone, message);
+  }
+
+  /**
+   * Format reminder time into human-readable text
+   */
+  private formatReminderTime(hours: number): string {
+    if (hours >= 1) {
+      return hours === 1 ? '1 hour' : `${hours} hours`;
+    } else {
+      const minutes = Math.round(hours * 60);
+      return minutes === 1 ? '1 minute' : `${minutes} minutes`;
+    }
   }
 }

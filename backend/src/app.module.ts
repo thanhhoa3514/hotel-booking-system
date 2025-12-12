@@ -10,6 +10,9 @@ import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RolesModule } from './roles/roles.module';
 import { StripeModule } from './stripe/stripe.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { BullModule } from '@nestjs/bull';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { JwtService } from './jwt/jwt.service';
 import { RedisService } from './redis/redis.service';
@@ -18,6 +21,17 @@ import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        redis: {
+          host: configService.get('REDIS_HOST') || 'localhost',
+          port: configService.get('REDIS_PORT') || 6379,
+        },
+      }),
+      inject: [ConfigService],
+    }),
     UsersModule,
     BookingsModule,
     RoomsModule,
@@ -26,6 +40,7 @@ import { RedisModule } from './redis/redis.module';
     PaymentsModule,
     RolesModule,
     StripeModule,
+    NotificationsModule,
     PrismaModule,
     LoggerModule.forRoot({
       pinoHttp: {

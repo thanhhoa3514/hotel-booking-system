@@ -4,8 +4,8 @@ export const createBookingSchema = z.object({
   roomIds: z
     .array(z.string())
     .min(1, { message: 'Vui long chon it nhat mot phong' }),
-  checkInDate: z.date({ required_error: 'Ngay nhap phong la buoc' }),
-  checkOutDate: z.date({ required_error: 'Ngay tra phong la buoc' }),
+  checkInDate: z.date(),
+  checkOutDate: z.date(),
   guestName: z
     .string()
     .min(2, { message: 'Ten khach phai it nhat 2 ky tu' }),
@@ -47,8 +47,8 @@ export type CancelBookingFormData = z.infer<typeof cancelBookingSchema>;
 
 export const checkAvailabilitySchema = z.object({
   roomTypeId: z.string().optional(),
-  checkInDate: z.date({ required_error: 'Ngay nhap phong la buoc' }),
-  checkOutDate: z.date({ required_error: 'Ngay tra phong la buoc' }),
+  checkInDate: z.date(),
+  checkOutDate: z.date(),
   numberOfRooms: z.number().int().positive().default(1).optional(),
 }).refine(
   (data) => {

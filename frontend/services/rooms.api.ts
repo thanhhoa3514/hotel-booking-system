@@ -1,6 +1,22 @@
 import { api } from "./api";
-import { Room, RoomType } from "@/types/room";
+import { Room, RoomType, RoomStatus } from "@/types/room";
 import { CheckAvailabilityDto, AvailabilityResponse } from "@/types/booking";
+
+export interface CreateRoomData {
+  roomNumber: string;
+  floor: number;
+  typeId: string;
+  status?: RoomStatus;
+  notes?: string;
+}
+
+export interface UpdateRoomData {
+  roomNumber?: string;
+  floor?: number;
+  typeId?: string;
+  status?: RoomStatus;
+  notes?: string;
+}
 
 export const roomsApi = {
   /**
@@ -25,6 +41,37 @@ export const roomsApi = {
    */
   getRoom: async (id: string): Promise<Room> => {
     const response = await api.get<Room>(`/rooms/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Create a new room
+   */
+  createRoom: async (data: CreateRoomData): Promise<Room> => {
+    const response = await api.post<Room>("/rooms", data);
+    return response.data;
+  },
+
+  /**
+   * Update a room
+   */
+  updateRoom: async (id: string, data: UpdateRoomData): Promise<Room> => {
+    const response = await api.patch<Room>(`/rooms/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete a room
+   */
+  deleteRoom: async (id: string): Promise<void> => {
+    await api.delete(`/rooms/${id}`);
+  },
+
+  /**
+   * Update room status
+   */
+  updateRoomStatus: async (id: string, status: RoomStatus): Promise<Room> => {
+    const response = await api.patch<Room>(`/rooms/${id}`, { status });
     return response.data;
   },
 
@@ -57,3 +104,4 @@ export const roomsApi = {
     return response.data;
   },
 };
+

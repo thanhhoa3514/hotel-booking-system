@@ -12,8 +12,8 @@ export function RoomStatsCards({ rooms }: RoomStatsCardsProps) {
         {
             label: "Tổng phòng",
             value: rooms.length,
-            color: "text-blue-600",
-            bg: "bg-blue-50 dark:bg-blue-950/30",
+            color: "text-orange-600",
+            bg: "bg-orange-50 dark:bg-orange-950/30",
         },
         {
             label: "Trống",

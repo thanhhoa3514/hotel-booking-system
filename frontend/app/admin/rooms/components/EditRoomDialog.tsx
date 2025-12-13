@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,13 +19,12 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Loader2 } from "lucide-react";
-import { RoomType, RoomStatus } from "@/types/room";
+import { Loader2 } from "lucide-react";
+import { Room, RoomType, RoomStatus } from "@/types/room";
 import { statusOptions } from "./room-utils";
 
-export interface NewRoomData {
+export interface EditRoomData {
     roomNumber: string;
     floor: string;
     typeId: string;
@@ -32,72 +32,66 @@ export interface NewRoomData {
     notes: string;
 }
 
-interface AddRoomDialogProps {
-    isOpen: boolean;
-    newRoom: NewRoomData;
+interface EditRoomDialogProps {
+    room: Room | null;
+    editData: EditRoomData;
     roomTypes: RoomType[];
     isSubmitting?: boolean;
-    onOpenChange: (open: boolean) => void;
-    onNewRoomChange: (data: NewRoomData) => void;
+    onClose: () => void;
+    onEditDataChange: (data: EditRoomData) => void;
     onSubmit: () => void;
 }
 
-export function AddRoomDialog({
-    isOpen,
-    newRoom,
+export function EditRoomDialog({
+    room,
+    editData,
     roomTypes,
     isSubmitting,
-    onOpenChange,
-    onNewRoomChange,
+    onClose,
+    onEditDataChange,
     onSubmit,
-}: AddRoomDialogProps) {
+}: EditRoomDialogProps) {
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogTrigger asChild>
-                <Button className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Thêm phòng mới
-                </Button>
-            </DialogTrigger>
+        <Dialog open={!!room} onOpenChange={() => onClose()}>
             <DialogContent className="sm:max-w-md rounded-2xl">
                 <DialogHeader>
-                    <DialogTitle>Thêm phòng mới</DialogTitle>
-                    <DialogDescription>Nhập thông tin phòng cần thêm</DialogDescription>
+                    <DialogTitle>Chỉnh sửa phòng {room?.roomNumber}</DialogTitle>
+                    <DialogDescription>Cập nhật thông tin phòng</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="roomNumber">Số phòng *</Label>
+                            <Label htmlFor="edit-roomNumber">Số phòng *</Label>
                             <Input
-                                id="roomNumber"
+                                id="edit-roomNumber"
                                 placeholder="VD: 101"
                                 className="rounded-xl"
-                                value={newRoom.roomNumber}
+                                value={editData.roomNumber}
                                 onChange={(e) =>
-                                    onNewRoomChange({ ...newRoom, roomNumber: e.target.value })
+                                    onEditDataChange({ ...editData, roomNumber: e.target.value })
                                 }
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="floor">Tầng *</Label>
+                            <Label htmlFor="edit-floor">Tầng *</Label>
                             <Input
-                                id="floor"
+                                id="edit-floor"
                                 type="number"
                                 placeholder="VD: 1"
                                 className="rounded-xl"
-                                value={newRoom.floor}
+                                value={editData.floor}
                                 onChange={(e) =>
-                                    onNewRoomChange({ ...newRoom, floor: e.target.value })
+                                    onEditDataChange({ ...editData, floor: e.target.value })
                                 }
                             />
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="type">Loại phòng *</Label>
+                        <Label htmlFor="edit-type">Loại phòng *</Label>
                         <Select
-                            value={newRoom.typeId}
+                            value={editData.typeId}
                             onValueChange={(value) =>
-                                onNewRoomChange({ ...newRoom, typeId: value })
+                                onEditDataChange({ ...editData, typeId: value })
                             }
                         >
                             <SelectTrigger className="rounded-xl">
@@ -113,11 +107,11 @@ export function AddRoomDialog({
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="status">Trạng thái</Label>
+                        <Label htmlFor="edit-status">Trạng thái</Label>
                         <Select
-                            value={newRoom.status}
+                            value={editData.status}
                             onValueChange={(value) =>
-                                onNewRoomChange({ ...newRoom, status: value as RoomStatus })
+                                onEditDataChange({ ...editData, status: value as RoomStatus })
                             }
                         >
                             <SelectTrigger className="rounded-xl">
@@ -133,15 +127,15 @@ export function AddRoomDialog({
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="notes">Ghi chú</Label>
+                        <Label htmlFor="edit-notes">Ghi chú</Label>
                         <Textarea
-                            id="notes"
+                            id="edit-notes"
                             placeholder="Ghi chú về phòng..."
                             className="rounded-xl resize-none"
                             rows={2}
-                            value={newRoom.notes}
+                            value={editData.notes}
                             onChange={(e) =>
-                                onNewRoomChange({ ...newRoom, notes: e.target.value })
+                                onEditDataChange({ ...editData, notes: e.target.value })
                             }
                         />
                     </div>
@@ -149,7 +143,7 @@ export function AddRoomDialog({
                 <DialogFooter>
                     <Button
                         variant="outline"
-                        onClick={() => onOpenChange(false)}
+                        onClick={onClose}
                         className="rounded-xl"
                         disabled={isSubmitting}
                     >
@@ -158,10 +152,10 @@ export function AddRoomDialog({
                     <Button
                         onClick={onSubmit}
                         className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500"
-                        disabled={!newRoom.roomNumber || !newRoom.floor || !newRoom.typeId || isSubmitting}
+                        disabled={!editData.roomNumber || !editData.floor || !editData.typeId || isSubmitting}
                     >
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Thêm phòng
+                        Cập nhật
                     </Button>
                 </DialogFooter>
             </DialogContent>

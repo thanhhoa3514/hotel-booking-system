@@ -63,8 +63,10 @@ export class UsersService {
     return result;
   }
 
-  async findAll(query: QueryUsersDto) {
+  async findAll(query: QueryUsersDto, excludeRoles: string[] = []) {
     const { search, status, roleId, page = 1, limit = 20 } = query;
+    const skip = (Number(page) - 1) * Number(limit);
+    const take = Number(limit);
 
     const where: any = {};
 
@@ -74,6 +76,14 @@ export class UsersService {
 
     if (roleId) {
       where.roleId = roleId;
+    }
+
+    if (excludeRoles && excludeRoles.length > 0) {
+      where.role = {
+        name: {
+          notIn: excludeRoles
+        }
+      };
     }
 
     if (search) {
@@ -106,8 +116,8 @@ export class UsersService {
           createdAt: true,
           updatedAt: true,
         },
-        skip: (page - 1) * limit,
-        take: limit,
+        skip,
+        take,
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.user.count({ where }),

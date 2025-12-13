@@ -26,6 +26,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
+
   constructor(private readonly usersService: UsersService) { }
 
   @Post()
@@ -38,7 +39,7 @@ export class UsersController {
   @Get()
   @Roles('ADMIN', 'MANAGER')
   findAll(@Query() query: QueryUsersDto) {
-    return this.usersService.findAll(query);
+    return this.usersService.findAll(query, ['ADMIN']);
   }
 
   @Get(':id')

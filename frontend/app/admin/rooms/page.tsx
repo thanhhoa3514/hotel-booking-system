@@ -89,10 +89,15 @@ export default function AdminRoomsPage() {
             toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
             return;
         }
+            const floor = Number.parseInt(newRoom.floor, 10);
+    if (!Number.isFinite(floor) || floor < 0) {
+        toast.error("Tầng không hợp lệ");
+        return;
+    }
 
         createMutation.mutate({
             roomNumber: newRoom.roomNumber,
-            floor: parseInt(newRoom.floor, 10),
+            floor,
             typeId: newRoom.typeId,
             status: newRoom.status,
             notes: newRoom.notes || undefined,

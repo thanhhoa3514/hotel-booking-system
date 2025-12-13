@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -56,10 +56,28 @@ export default function AdminLayout({
 }) {
     const router = useRouter();
     const pathname = usePathname();
-    const { user, isAuthenticated, logout } = useAuthStore();
+    const { user, isAuthenticated, logout, loadUser } = useAuthStore();
+    const [hasHydrated, setHasHydrated] = useState(false);
 
-    // Check auth and role
+    // Wait for zustand to hydrate from localStorage
     useEffect(() => {
+        // Check if there's a token in localStorage
+        const token = localStorage.getItem('auth_token');
+
+        if (token && !isAuthenticated) {
+            // Token exists but store not hydrated yet, load user
+            loadUser().finally(() => {
+                setHasHydrated(true);
+            });
+        } else {
+            setHasHydrated(true);
+        }
+    }, []);
+
+    // Check auth and role after hydration
+    useEffect(() => {
+        if (!hasHydrated) return; // Wait for hydration
+
         if (!isAuthenticated) {
             router.push("/auth/login");
             return;
@@ -70,7 +88,7 @@ export default function AdminLayout({
             toast.error("Bạn không có quyền truy cập trang này");
             router.push("/");
         }
-    }, [isAuthenticated, user, router]);
+    }, [hasHydrated, isAuthenticated, user, router]);
 
     const handleLogout = () => {
         logout();
@@ -87,7 +105,8 @@ export default function AdminLayout({
             .slice(0, 2);
     };
 
-    if (!isAuthenticated || !user) {
+    // Show loading while hydrating or checking auth
+    if (!hasHydrated || !isAuthenticated || !user) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

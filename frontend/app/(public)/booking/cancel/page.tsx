@@ -59,7 +59,7 @@ function CancelContent() {
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
               onClick={handleRetry}
-              className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              className="flex-1 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700"
               size="lg"
             >
               <RefreshCcw className="mr-2 h-5 w-5" />
@@ -86,7 +86,7 @@ export default function BookingCancelPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
         </div>
       }
     >

@@ -122,11 +122,11 @@ const bookings = [
 const getStatusConfig = (status: string) => {
     switch (status) {
         case "confirmed":
-            return { label: "Đã xác nhận", icon: CheckCircle2, className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" };
+            return { label: "Đã xác nhận", icon: CheckCircle2, className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" };
         case "pending":
             return { label: "Chờ xử lý", icon: Clock, className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" };
         case "checked-in":
-            return { label: "Đã nhận phòng", icon: CheckCircle2, className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
+            return { label: "Đã nhận phòng", icon: CheckCircle2, className: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" };
         case "checked-out":
             return { label: "Đã trả phòng", icon: CheckCircle2, className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400" };
         case "cancelled":
@@ -168,7 +168,7 @@ export default function AdminBookingsPage() {
                         Theo dõi và quản lý tất cả đặt phòng
                     </p>
                 </div>
-                <Button className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30">
+                <Button className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30">
                     <Plus className="h-4 w-4 mr-2" />
                     Tạo đặt phòng
                 </Button>
@@ -177,9 +177,9 @@ export default function AdminBookingsPage() {
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: "Tổng đặt phòng", value: bookings.length, color: "text-blue-600" },
+                    { label: "Tổng đặt phòng", value: bookings.length, color: "text-orange-600" },
                     { label: "Chờ xử lý", value: bookings.filter(b => b.status === "pending").length, color: "text-amber-600" },
-                    { label: "Đã xác nhận", value: bookings.filter(b => b.status === "confirmed").length, color: "text-emerald-600" },
+                    { label: "Đã xác nhận", value: bookings.filter(b => b.status === "confirmed").length, color: "text-green-600" },
                     { label: "Đã hủy", value: bookings.filter(b => b.status === "cancelled").length, color: "text-red-600" },
                 ].map((stat, index) => (
                     <Card key={index} className="border-0 shadow-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl">
@@ -243,7 +243,7 @@ export default function AdminBookingsPage() {
                                 const statusConfig = getStatusConfig(booking.status);
                                 return (
                                     <TableRow key={booking.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                                        <TableCell className="font-mono text-sm font-medium text-blue-600">
+                                        <TableCell className="font-mono text-sm font-medium text-orange-600">
                                             {booking.id}
                                         </TableCell>
                                         <TableCell>

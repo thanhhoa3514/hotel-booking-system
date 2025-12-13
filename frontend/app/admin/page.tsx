@@ -35,7 +35,7 @@ const stats = [
         change: "+8%",
         trend: "up",
         icon: Calendar,
-        color: "from-blue-500 to-indigo-500",
+        color: "from-orange-500 to-amber-500",
     },
     {
         title: "Phòng trống",
@@ -104,7 +104,7 @@ const getStatusConfig = (status: string) => {
         case "pending":
             return { label: "Chờ xử lý", icon: Clock, className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" };
         case "checked-in":
-            return { label: "Đã nhận phòng", icon: CheckCircle2, className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
+            return { label: "Đã nhận phòng", icon: CheckCircle2, className: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" };
         case "cancelled":
             return { label: "Đã hủy", icon: XCircle, className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" };
         default:
@@ -130,7 +130,7 @@ export default function AdminDashboardPage() {
                         <Clock className="h-4 w-4 mr-2" />
                         Tuần này
                     </Button>
-                    <Button className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30">
+                    <Button className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30">
                         Xuất báo cáo
                     </Button>
                 </div>
@@ -181,7 +181,7 @@ export default function AdminDashboardPage() {
                             <CardTitle className="text-lg">Đặt phòng gần đây</CardTitle>
                             <CardDescription>Cập nhật realtime</CardDescription>
                         </div>
-                        <Button variant="ghost" size="sm" className="text-blue-600">
+                        <Button variant="ghost" size="sm" className="text-orange-600">
                             Xem tất cả
                             <ArrowUpRight className="h-4 w-4 ml-1" />
                         </Button>
@@ -196,7 +196,7 @@ export default function AdminDashboardPage() {
                                         className="flex items-center justify-between p-4 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-slate-800 transition-colors"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-medium">
+                                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-medium">
                                                 {booking.guest.charAt(0)}
                                             </div>
                                             <div>
@@ -229,9 +229,9 @@ export default function AdminDashboardPage() {
                     <CardContent className="space-y-3">
                         <Button
                             variant="outline"
-                            className="w-full justify-start rounded-xl h-12 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:text-blue-600 hover:border-blue-200"
+                            className="w-full justify-start rounded-xl h-12 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-600 hover:border-orange-200"
                         >
-                            <Calendar className="h-5 w-5 mr-3 text-blue-500" />
+                            <Calendar className="h-5 w-5 mr-3 text-orange-500" />
                             Tạo đặt phòng mới
                         </Button>
                         <Button
@@ -269,7 +269,7 @@ export default function AdminDashboardPage() {
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         {[
                             { label: "Trống", count: 18, color: "bg-emerald-500", bgColor: "bg-emerald-50 dark:bg-emerald-950/30" },
-                            { label: "Đang sử dụng", count: 45, color: "bg-blue-500", bgColor: "bg-blue-50 dark:bg-blue-950/30" },
+                            { label: "Đang sử dụng", count: 45, color: "bg-orange-500", bgColor: "bg-orange-50 dark:bg-orange-950/30" },
                             { label: "Đang dọn", count: 5, color: "bg-amber-500", bgColor: "bg-amber-50 dark:bg-amber-950/30" },
                             { label: "Bảo trì", count: 2, color: "bg-red-500", bgColor: "bg-red-50 dark:bg-red-950/30" },
                             { label: "Đã đặt trước", count: 10, color: "bg-purple-500", bgColor: "bg-purple-50 dark:bg-purple-950/30" },

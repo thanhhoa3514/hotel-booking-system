@@ -18,8 +18,8 @@ export function ServiceBookingStats({ bookings }: ServiceBookingStatsProps) {
         {
             label: "Da xac nhan",
             value: bookings.filter((b) => b.status === "CONFIRMED").length,
-            color: "text-blue-600",
-            bg: "bg-blue-50 dark:bg-blue-950/30",
+            color: "text-orange-600",
+            bg: "bg-orange-50 dark:bg-orange-950/30",
         },
         {
             label: "Dang thuc hien",
@@ -30,8 +30,8 @@ export function ServiceBookingStats({ bookings }: ServiceBookingStatsProps) {
         {
             label: "Hoan thanh",
             value: bookings.filter((b) => b.status === "COMPLETED").length,
-            color: "text-emerald-600",
-            bg: "bg-emerald-50 dark:bg-emerald-950/30",
+            color: "text-green-600",
+            bg: "bg-green-50 dark:bg-green-950/30",
         },
     ];
 

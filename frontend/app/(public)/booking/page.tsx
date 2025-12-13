@@ -128,16 +128,16 @@ function BookingContent() {
                             <div
                                 key={step}
                                 className={`flex items-center gap-2 ${index <= currentStep
-                                        ? "text-blue-600 dark:text-blue-400"
-                                        : "text-slate-400"
+                                    ? "text-orange-600 dark:text-orange-400"
+                                    : "text-slate-400"
                                     }`}
                             >
                                 <div
                                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${index < currentStep
-                                            ? "bg-blue-600 text-white"
-                                            : index === currentStep
-                                                ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30"
-                                                : "bg-slate-200 dark:bg-slate-700"
+                                        ? "bg-orange-600 text-white"
+                                        : index === currentStep
+                                            ? "bg-orange-100 text-orange-600 dark:bg-orange-900/30"
+                                            : "bg-slate-200 dark:bg-slate-700"
                                         }`}
                                 >
                                     {index < currentStep ? <Check className="h-4 w-4" /> : index + 1}
@@ -167,9 +167,9 @@ function BookingContent() {
                                                     <div
                                                         key={room.id}
                                                         onClick={() => setSelectedRoom(room.id)}
-                                                        className={`flex gap-4 p-4 border rounded-lg cursor-pointer transition-all hover:border-blue-500 ${selectedRoom === room.id
-                                                                ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
-                                                                : "border-slate-200 dark:border-slate-700"
+                                                        className={`flex gap-4 p-4 border rounded-lg cursor-pointer transition-all hover:border-orange-500 ${selectedRoom === room.id
+                                                            ? "border-orange-600 bg-orange-50 dark:bg-orange-900/20"
+                                                            : "border-slate-200 dark:border-slate-700"
                                                             }`}
                                                     >
                                                         <div className="relative w-24 h-24 rounded-md overflow-hidden flex-shrink-0">
@@ -177,10 +177,10 @@ function BookingContent() {
                                                         </div>
                                                         <div className="flex-1">
                                                             <h3 className="font-medium">{room.name}</h3>
-                                                            <p className="text-2xl font-bold text-blue-600">${room.price}<span className="text-sm font-normal text-slate-500">/night</span></p>
+                                                            <p className="text-2xl font-bold text-orange-600">${room.price}<span className="text-sm font-normal text-slate-500">/night</span></p>
                                                         </div>
                                                         {selectedRoom === room.id && (
-                                                            <Check className="h-5 w-5 text-blue-600" />
+                                                            <Check className="h-5 w-5 text-orange-600" />
                                                         )}
                                                     </div>
                                                 ))}
@@ -294,7 +294,7 @@ function BookingContent() {
                                             <p><strong>Dates:</strong> {dateRange?.from && format(dateRange.from, "MMM dd, yyyy")} - {dateRange?.to && format(dateRange.to, "MMM dd, yyyy")}</p>
                                             <p><strong>Guest:</strong> {guestDetails.fullName}</p>
                                             <p><strong>Email:</strong> {guestDetails.email}</p>
-                                            <p><strong>Total:</strong> <span className="text-xl font-bold text-blue-600">${totalPrice}</span></p>
+                                            <p><strong>Total:</strong> <span className="text-xl font-bold text-orange-600">${totalPrice}</span></p>
                                         </div>
                                     </div>
                                 )}
@@ -306,7 +306,7 @@ function BookingContent() {
                                         Back
                                     </Button>
                                     {currentStep < STEPS.length - 1 ? (
-                                        <Button onClick={handleNext} disabled={!canProceed()} className="bg-blue-600 hover:bg-blue-700 cursor-pointer">
+                                        <Button onClick={handleNext} disabled={!canProceed()} className="bg-orange-600 hover:bg-orange-700 cursor-pointer">
                                             Next
                                             <ChevronRight className="h-4 w-4 ml-2" />
                                         </Button>
@@ -345,7 +345,7 @@ function BookingContent() {
                                             <Separator />
                                             <div className="flex justify-between text-lg font-bold">
                                                 <span>Total</span>
-                                                <span className="text-blue-600">${totalPrice || "-"}</span>
+                                                <span className="text-orange-600">${totalPrice || "-"}</span>
                                             </div>
                                         </div>
                                     </>
@@ -365,7 +365,7 @@ export default function BookingPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
             </div>
         }>
             <BookingContent />

@@ -16,7 +16,7 @@ export default function AuthLayout({
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
                 <div className="relative z-10 flex h-full flex-col justify-between p-12 text-white">
                     <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                        <div className="h-8 w-8 rounded-lg bg-orange-600 flex items-center justify-center">
                             <span className="text-white font-bold text-lg">H</span>
                         </div>
                         <span className="text-xl font-bold">HotelPro</span>

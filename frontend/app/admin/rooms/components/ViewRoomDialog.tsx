@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,6 +34,15 @@ export function ViewRoomDialog({ room, onClose }: ViewRoomDialogProps) {
     const roomType = room.roomType;
     const images = roomType?.images || [];
     const hasImages = images.length > 0;
+    useEffect(() => {
+        // reset on room change / new image list
+        setCurrentImageIndex(0);
+    }, [room?.id]);
+
+    useEffect(() => {
+        // clamp if image list shrinks
+        setCurrentImageIndex((idx) => Math.min(idx, Math.max(0, images.length - 1)));
+    }, [images.length]);
     const statusConfig = getStatusConfig(room.status);
 
     const handlePrevImage = () => {
@@ -202,7 +211,7 @@ export function ViewRoomDialog({ room, onClose }: ViewRoomDialogProps) {
                                     <button
                                         key={img.id}
                                         className={`flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-colors ${idx === currentImageIndex
-                                            ? "border-blue-500"
+                                            ? "border-orange-500"
                                             : "border-transparent hover:border-slate-300"
                                             }`}
                                         onClick={() => setCurrentImageIndex(idx)}

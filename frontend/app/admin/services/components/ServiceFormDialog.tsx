@@ -85,7 +85,7 @@ export function ServiceFormDialog({
             <DialogTrigger asChild>
                 <Button
                     onClick={() => onOpenChange(true)}
-                    className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30"
+                    className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30"
                 >
                     <Plus className="h-4 w-4 mr-2" />
                     Them dich vu
@@ -358,7 +358,7 @@ export function ServiceFormDialog({
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500"
+                                className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500"
                             >
                                 {isSubmitting && (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

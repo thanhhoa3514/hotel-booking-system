@@ -88,7 +88,7 @@ export function AssignStaffDialog({
                     <Button
                         onClick={onConfirm}
                         disabled={!selectedStaffId || isAssigning}
-                        className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500"
+                        className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500"
                     >
                         {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Phan cong

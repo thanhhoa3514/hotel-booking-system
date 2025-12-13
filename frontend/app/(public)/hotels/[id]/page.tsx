@@ -202,8 +202,8 @@ export default function HotelDetailPage({ params }: { params: Promise<{ id: stri
                     <div>
                         <div className="flex items-center gap-2 mb-6">
                             <h2 className="text-2xl font-bold">Reviews</h2>
-                            <div className="flex items-center gap-1 text-sm bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-semibold">
-                                <Star className="h-4 w-4 fill-blue-700" />
+                            <div className="flex items-center gap-1 text-sm bg-orange-50 text-orange-700 px-2 py-1 rounded-full font-semibold">
+                                <Star className="h-4 w-4 fill-orange-700" />
                                 {hotel.rating} ({hotel.reviews} reviews)
                             </div>
                         </div>

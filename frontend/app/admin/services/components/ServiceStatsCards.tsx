@@ -13,14 +13,14 @@ export function ServiceStatsCards({ services, total }: ServiceStatsCardsProps) {
         {
             label: "Tong dich vu",
             value: total,
-            color: "text-blue-600",
-            bg: "bg-blue-50 dark:bg-blue-950/30",
+            color: "text-orange-600",
+            bg: "bg-orange-50 dark:bg-orange-950/30",
         },
         {
             label: "Dang hoat dong",
             value: services.filter((s) => s.isActive).length,
-            color: "text-emerald-600",
-            bg: "bg-emerald-50 dark:bg-emerald-950/30",
+            color: "text-green-600",
+            bg: "bg-green-50 dark:bg-green-950/30",
         },
         {
             label: "Tam dung",

@@ -49,7 +49,7 @@ export default function HomePage() {
                 <div className="relative z-10 w-full container mx-auto px-4 flex flex-col items-center gap-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
                     <div className="text-center space-y-4 max-w-3xl">
                         <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight drop-shadow-md">
-                            Find Your Perfect <span className="text-blue-100">Escape</span>
+                            Find Your Perfect <span className="text-orange-200">Escape</span>
                         </h1>
                         <p className="text-lg md:text-xl text-white/90 font-light drop-shadow">
                             Discover luxury hotels, resorts, and unique stays around the world.

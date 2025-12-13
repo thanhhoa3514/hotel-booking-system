@@ -66,7 +66,7 @@ const MOCK_BOOKINGS = [
 
 const STATUS_CONFIG = {
     PENDING: { label: "Pending", color: "bg-yellow-500", icon: Clock },
-    CONFIRMED: { label: "Confirmed", color: "bg-blue-500", icon: CheckCircle },
+    CONFIRMED: { label: "Confirmed", color: "bg-green-500", icon: CheckCircle },
     CHECKED_IN: { label: "Checked In", color: "bg-green-500", icon: CheckCircle },
     CHECKED_OUT: { label: "Checked Out", color: "bg-slate-500", icon: CheckCircle },
     CANCELLED: { label: "Cancelled", color: "bg-red-500", icon: XCircle },
@@ -115,7 +115,7 @@ export default function BookingsDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
                     <Card>
                         <CardContent className="p-4">
-                            <div className="text-2xl font-bold text-blue-600">{MOCK_BOOKINGS.length}</div>
+                            <div className="text-2xl font-bold text-orange-600">{MOCK_BOOKINGS.length}</div>
                             <div className="text-sm text-slate-500">Total Bookings</div>
                         </CardContent>
                     </Card>

@@ -76,98 +76,120 @@ function RoomCard({ room, onView, onEdit, onDelete }: RoomCardProps) {
     const imageUrl = primaryImage?.url;
 
     return (
-        <Card className="border-0 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
-            {/* Room Image */}
-            <div className="h-40 relative bg-slate-100 dark:bg-slate-800">
+        <Card className={`border-0 border-l-4 ${statusConfig.borderColor} shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 group`}>
+            {/* Room Image or Pastel Placeholder */}
+            <div className={`h-40 relative ${imageUrl ? 'bg-slate-100 dark:bg-slate-800' : statusConfig.softBg}`}>
                 {imageUrl ? (
-                    <img
-                        src={imageUrl}
-                        alt={`Phòng ${room.roomNumber}`}
-                        className="w-full h-full object-cover"
-                    />
+                    <div className="w-full h-full relative overflow-hidden">
+                        <img
+                            src={imageUrl}
+                            alt={`Phòng ${room.roomNumber}`}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
+                    </div>
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                        <ImageOff className="h-12 w-12 text-slate-300 dark:text-slate-600" />
+                    <div className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden">
+                        {/* Decorative background shapes */}
+                        <div className={`absolute top-0 right-0 w-24 h-24 transform translate-x-8 -translate-y-8 rounded-full opacity-20 ${statusConfig.className.split(' ')[0]}`} />
+                        <div className={`absolute bottom-0 left-0 w-16 h-16 transform -translate-x-4 translate-y-4 rounded-full opacity-20 ${statusConfig.className.split(' ')[0]}`} />
+
+                        <div className={`p-4 rounded-full ${statusConfig.className.split(' ')[0]} bg-opacity-20 backdrop-blur-sm mb-2`}>
+                            <BedDouble className={`h-8 w-8 ${statusConfig.iconColor}`} />
+                        </div>
+                        <p className={`text-sm font-medium ${statusConfig.textColor}`}>
+                            {roomType?.name || "Standard Room"}
+                        </p>
                     </div>
                 )}
 
-                {/* Overlay with room info */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-3 left-3">
-                    <p className="text-white/80 text-sm">{roomType?.name || "Unknown"}</p>
-                    <p className="text-white text-xl font-bold">Phòng {room.roomNumber}</p>
-                </div>
+                {/* Overlay Text (Only visible if there is an image, otherwise text is properly shown in placeholder) */}
+                {imageUrl && (
+                    <div className="absolute bottom-3 left-3 z-10">
+                        <p className="text-white/80 text-xs font-medium uppercase tracking-wider">{roomType?.name || "Unknown"}</p>
+                        <p className="text-white text-xl font-bold">P. {room.roomNumber}</p>
+                    </div>
+                )}
+
+                {/* Status Badge */}
                 <Badge
-                    className={`absolute top-3 right-3 ${statusConfig.className} border-0 rounded-lg`}
+                    variant="secondary"
+                    className={`absolute top-3 right-3 ${statusConfig.className} border-0 font-semibold shadow-sm backdrop-blur-md`}
                 >
                     {statusConfig.label}
                 </Badge>
             </div>
 
             <CardContent className="p-4">
-                {/* Info Row */}
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <BedDouble className="h-4 w-4" />
-                        <span>Tầng {room.floor}</span>
+                {/* Info Text (If image exists, room number is on image. If no image, show room number here clearly) */}
+                {!imageUrl && (
+                    <div className="mb-3">
+                        <p className={`text-2xl font-bold ${statusConfig.textColor}`}>Phòng {room.roomNumber}</p>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        <span>{roomType?.maxOccupancy || 0} khách</span>
+                )}
+
+                {/* Amenities & Info */}
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center text-sm text-muted-foreground bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
+                            <Users className="h-3.5 w-3.5 mr-1.5" />
+                            <span>{roomType?.maxOccupancy || 0}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
+                            <BedDouble className="h-3.5 w-3.5 mr-1.5" />
+                            <span className="truncate max-w-[80px]" title={`Tầng ${room.floor}`}>Tầng {room.floor}</span>
+                        </div>
                     </div>
-                </div>
 
-                {/* Amenities */}
-                <div className="flex items-center gap-2 mb-3">
-                    {(roomType?.amenities || []).slice(0, 5).map((amenity, index) => {
-                        const icon = getAmenityIcon(amenity);
-                        if (!icon) return null;
-                        return (
-                            <div
-                                key={index}
-                                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-muted-foreground"
-                                title={amenity}
-                            >
-                                {icon}
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {/* Price & Actions */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-lg font-bold">
+                    <div className="text-right">
+                        <p className="text-lg font-bold text-slate-700 dark:text-slate-200">
                             {formatCurrency(roomType?.basePrice || 0)}
                         </p>
-                        <p className="text-xs text-muted-foreground">/đêm</p>
                     </div>
+                </div>
+
+                {/* Action Row */}
+                <div className="grid grid-cols-[1fr,auto] gap-2 mt-4">
+                    {/* Primary Quick Action Button */}
+                    <Button
+                        className={`w-full shadow-sm ${room.status === 'AVAILABLE'
+                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                : room.status === 'OCCUPIED'
+                                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                                    : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
+                            }`}
+                        onClick={() => onView?.(room)} // Placeholder for specific actions
+                    >
+                        {statusConfig.actionLabel}
+                    </Button>
+
+                    {/* Secondary Actions Menu */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="rounded-xl">
+                            <Button variant="outline" size="icon" className="aspect-square rounded-lg">
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-xl">
+                        <DropdownMenuContent align="end" className="rounded-xl w-48">
                             <DropdownMenuItem
-                                className="cursor-pointer"
+                                className="cursor-pointer py-2.5"
                                 onClick={() => onView?.(room)}
                             >
-                                <Eye className="h-4 w-4 mr-2" />
+                                <Eye className="h-4 w-4 mr-2.5 text-slate-500" />
                                 Xem chi tiết
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                                className="cursor-pointer"
+                                className="cursor-pointer py-2.5"
                                 onClick={() => onEdit?.(room)}
                             >
-                                <Edit className="h-4 w-4 mr-2" />
+                                <Edit className="h-4 w-4 mr-2.5 text-slate-500" />
                                 Chỉnh sửa
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                                className="cursor-pointer text-red-600"
+                                className="cursor-pointer py-2.5 text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/30"
                                 onClick={() => onDelete?.(room)}
                             >
-                                <Trash2 className="h-4 w-4 mr-2" />
+                                <Trash2 className="h-4 w-4 mr-2.5" />
                                 Xóa phòng
                             </DropdownMenuItem>
                         </DropdownMenuContent>

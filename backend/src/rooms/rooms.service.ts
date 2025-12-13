@@ -35,7 +35,11 @@ export class RoomsService {
     return this.prisma.room.findMany({
       include: {
         roomType: {
-          select: { name: true, slug: true },
+          include: {
+            images: {
+              orderBy: { displayOrder: 'asc' },
+            },
+          },
         },
       },
       orderBy: { roomNumber: 'asc' },
@@ -46,7 +50,13 @@ export class RoomsService {
     const room = await this.prisma.room.findUnique({
       where: { id },
       include: {
-        roomType: true,
+        roomType: {
+          include: {
+            images: {
+              orderBy: { displayOrder: 'asc' },
+            },
+          },
+        },
       },
     });
     if (!room) {

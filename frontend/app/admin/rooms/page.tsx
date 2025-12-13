@@ -10,10 +10,22 @@ import {
     RoomFilters,
     RoomGrid,
     AddRoomDialog,
+    EditRoomDialog,
+    DeleteRoomDialog,
+    ViewRoomDialog,
     NewRoomData,
+    EditRoomData,
 } from "./components";
 
 const defaultNewRoom: NewRoomData = {
+    roomNumber: "",
+    floor: "",
+    typeId: "",
+    status: "AVAILABLE",
+    notes: "",
+};
+
+const defaultEditRoom: EditRoomData = {
     roomNumber: "",
     floor: "",
     typeId: "",
@@ -26,8 +38,18 @@ export default function AdminRoomsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(6);
+
+    // Dialog states
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [newRoom, setNewRoom] = useState<NewRoomData>(defaultNewRoom);
+    const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+    const [editData, setEditData] = useState<EditRoomData>(defaultEditRoom);
+    const [deletingRoom, setDeletingRoom] = useState<Room | null>(null);
+    const [viewingRoom, setViewingRoom] = useState<Room | null>(null);
 
     // Fetch rooms
     const {
@@ -60,12 +82,30 @@ export default function AdminRoomsPage() {
         },
     });
 
+    // Update room mutation
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Parameters<typeof roomsApi.updateRoom>[1] }) =>
+            roomsApi.updateRoom(id, data),
+        onSuccess: () => {
+            toast.success("Đã cập nhật phòng thành công!");
+            queryClient.invalidateQueries({ queryKey: ["rooms"] });
+            setEditingRoom(null);
+            setEditData(defaultEditRoom);
+        },
+        onError: (error: any) => {
+            toast.error("Không thể cập nhật phòng", {
+                description: error.response?.data?.message || error.message,
+            });
+        },
+    });
+
     // Delete room mutation
     const deleteMutation = useMutation({
         mutationFn: roomsApi.deleteRoom,
         onSuccess: () => {
             toast.success("Đã xóa phòng thành công!");
             queryClient.invalidateQueries({ queryKey: ["rooms"] });
+            setDeletingRoom(null);
         },
         onError: (error: any) => {
             toast.error("Không thể xóa phòng", {
@@ -84,16 +124,33 @@ export default function AdminRoomsPage() {
         return matchesSearch && matchesType && matchesStatus;
     });
 
+    // Reset to page 1 when filters change
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        setCurrentPage(1);
+    };
+
+    const handleTypeChange = (value: string) => {
+        setTypeFilter(value);
+        setCurrentPage(1);
+    };
+
+    const handleStatusChange = (value: string) => {
+        setStatusFilter(value);
+        setCurrentPage(1);
+    };
+
     const handleAddRoom = () => {
         if (!newRoom.roomNumber || !newRoom.floor || !newRoom.typeId) {
             toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
             return;
         }
-            const floor = Number.parseInt(newRoom.floor, 10);
-    if (!Number.isFinite(floor) || floor < 0) {
-        toast.error("Tầng không hợp lệ");
-        return;
-    }
+
+        const floor = Number.parseInt(newRoom.floor, 10);
+        if (!Number.isFinite(floor) || floor < 0) {
+            toast.error("Tầng không hợp lệ");
+            return;
+        }
 
         createMutation.mutate({
             roomNumber: newRoom.roomNumber,
@@ -104,9 +161,46 @@ export default function AdminRoomsPage() {
         });
     };
 
-    const handleDeleteRoom = (room: Room) => {
-        if (confirm(`Bạn có chắc muốn xóa phòng ${room.roomNumber}?`)) {
-            deleteMutation.mutate(room.id);
+    const handleOpenEdit = (room: Room) => {
+        setEditingRoom(room);
+        setEditData({
+            roomNumber: room.roomNumber,
+            floor: room.floor.toString(),
+            typeId: room.typeId,
+            status: room.status,
+            notes: room.notes || "",
+        });
+    };
+
+    const handleUpdateRoom = () => {
+        if (!editingRoom) return;
+
+        if (!editData.roomNumber || !editData.floor || !editData.typeId) {
+            toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
+            return;
+        }
+
+        const floor = Number.parseInt(editData.floor, 10);
+        if (!Number.isFinite(floor) || floor < 0) {
+            toast.error("Tầng không hợp lệ");
+            return;
+        }
+
+        updateMutation.mutate({
+            id: editingRoom.id,
+            data: {
+                roomNumber: editData.roomNumber,
+                floor,
+                typeId: editData.typeId,
+                status: editData.status,
+                notes: editData.notes || undefined,
+            },
+        });
+    };
+
+    const handleDeleteRoom = () => {
+        if (deletingRoom) {
+            deleteMutation.mutate(deletingRoom.id);
         }
     };
 
@@ -143,18 +237,47 @@ export default function AdminRoomsPage() {
                 typeFilter={typeFilter}
                 statusFilter={statusFilter}
                 roomTypes={roomTypes}
-                onSearchChange={setSearchQuery}
-                onTypeChange={setTypeFilter}
-                onStatusChange={setStatusFilter}
+                onSearchChange={handleSearchChange}
+                onTypeChange={handleTypeChange}
+                onStatusChange={handleStatusChange}
             />
 
             {/* Rooms Grid */}
             <RoomGrid
                 rooms={filteredRooms}
                 isLoading={roomsLoading}
-                onView={(room) => toast.info(`Xem chi tiết phòng ${room.roomNumber}`)}
-                onEdit={(room) => toast.info(`Chỉnh sửa phòng ${room.roomNumber}`)}
-                onDelete={handleDeleteRoom}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                onView={setViewingRoom}
+                onEdit={handleOpenEdit}
+                onDelete={setDeletingRoom}
+            />
+
+            {/* Edit Room Dialog */}
+            <EditRoomDialog
+                room={editingRoom}
+                editData={editData}
+                roomTypes={roomTypes}
+                isSubmitting={updateMutation.isPending}
+                onClose={() => setEditingRoom(null)}
+                onEditDataChange={setEditData}
+                onSubmit={handleUpdateRoom}
+            />
+
+            {/* Delete Room Dialog */}
+            <DeleteRoomDialog
+                room={deletingRoom}
+                isDeleting={deleteMutation.isPending}
+                onClose={() => setDeletingRoom(null)}
+                onConfirm={handleDeleteRoom}
+            />
+
+            {/* View Room Dialog */}
+            <ViewRoomDialog
+                room={viewingRoom}
+                onClose={() => setViewingRoom(null)}
             />
         </div>
     );

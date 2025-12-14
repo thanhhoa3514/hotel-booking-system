@@ -2,6 +2,16 @@ import { api } from "./api";
 import { Room, RoomType, RoomStatus } from "@/types/room";
 import { CheckAvailabilityDto, AvailabilityResponse } from "@/types/booking";
 
+export interface RoomTypesResponse {
+  data: RoomType[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export interface CreateRoomData {
   roomNumber: string;
   floor: number;
@@ -76,12 +86,17 @@ export const roomsApi = {
   },
 
   /**
-   * Get all room types
+   * Get all room types with pagination
    */
-  getRoomTypes: async (): Promise<RoomType[]> => {
-    const response = await api.get<RoomType[]>("/room-types");
+  getRoomTypes: async (filters?: { page?: number; limit?: number }): Promise<RoomTypesResponse> => {
+    const params = new URLSearchParams();
+    if (filters?.page) params.append("page", filters.page.toString());
+    if (filters?.limit) params.append("limit", filters.limit.toString());
+
+    const response = await api.get<RoomTypesResponse>(`/room-types?${params.toString()}`);
     return response.data;
   },
+
 
   /**
    * Get room type by ID

@@ -59,50 +59,62 @@ export class StripeService {
       throw new Error('Booking is not in pending status');
     }
 
+    this.logger.log(`Creating checkout session for booking ${bookingId}`);
+    this.logger.log(`Booking rooms: ${JSON.stringify(booking.rooms)}`);
+
     // Prepare line items for Stripe
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = booking.rooms.map(
       (bookingRoom) => ({
         price_data: {
-          currency: 'usd',
+          currency: 'vnd',
           product_data: {
             name: bookingRoom.room.roomType.name,
             description: `Room ${bookingRoom.room.roomNumber} - ${bookingRoom.room.roomType.description || ''}`,
           },
-          unit_amount: Math.round(Number(bookingRoom.pricePerNight) * 100), // Convert to cents
+          unit_amount: Math.round(Number(bookingRoom.pricePerNight)), // VND doesn't use cents
         },
-        quantity: 1,
+        quantity: bookingRoom.numberOfNights,
       }),
     );
 
-    // Create checkout session
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    const session = await this.stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      mode: 'payment',
-      success_url: `${frontendUrl}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${frontendUrl}/booking/cancel?booking_id=${bookingId}`,
-      metadata: {
-        bookingId: booking.id,
-        userId: booking.userId,
-      },
-      customer_email: booking.guestEmail,
-    });
+    this.logger.log(`Line items: ${JSON.stringify(lineItems)}`);
 
-    // Update booking with Stripe session ID
-    await this.prisma.booking.update({
-      where: { id: bookingId },
-      data: {
-        // Store session ID in special requests or create a separate field
-        specialRequests: booking.specialRequests
-          ? `${booking.specialRequests}\n[Stripe Session: ${session.id}]`
-          : `[Stripe Session: ${session.id}]`,
-      },
-    });
+    try {
+      // Create checkout session
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: lineItems,
+        mode: 'payment',
+        success_url: `${frontendUrl}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${frontendUrl}/booking/cancel?booking_id=${bookingId}`,
+        metadata: {
+          bookingId: booking.id,
+          userId: booking.userId,
+        },
+        customer_email: booking.guestEmail,
+      });
 
-    this.logger.log(`Created Stripe checkout session ${session.id} for booking ${bookingId}`);
-    return session;
+      // Update booking with Stripe session ID
+      await this.prisma.booking.update({
+        where: { id: bookingId },
+        data: {
+          // Store session ID in special requests or create a separate field
+          specialRequests: booking.specialRequests
+            ? `${booking.specialRequests}\n[Stripe Session: ${session.id}]`
+            : `[Stripe Session: ${session.id}]`,
+        },
+      });
+
+      this.logger.log(`Created Stripe checkout session ${session.id} for booking ${bookingId}`);
+      return session;
+    } catch (error) {
+      this.logger.error(`Stripe error: ${error.message}`);
+      this.logger.error(`Stripe error details: ${JSON.stringify(error)}`);
+      throw error;
+    }
   }
+
 
   /**
    * Handle successful payment webhook

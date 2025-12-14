@@ -36,11 +36,33 @@ export class RoomTypesService {
         });
     }
 
-    async findAll() {
-        return this.prisma.roomType.findMany({
-            orderBy: { displayOrder: 'asc' },
-        });
+    async findAll(query?: { page?: number; limit?: number }) {
+        const page = Number(query?.page) || 1;
+        const limit = Number(query?.limit) || 20;
+
+        const [roomTypes, total] = await Promise.all([
+            this.prisma.roomType.findMany({
+                include: {
+                    images: true,
+                },
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            this.prisma.roomType.count(),
+        ]);
+
+        return {
+            data: roomTypes,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
     }
+
 
     async findOne(id: string) {
         const roomType = await this.prisma.roomType.findUnique({

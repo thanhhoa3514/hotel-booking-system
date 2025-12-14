@@ -13,7 +13,7 @@ import {
 
 @Injectable()
 export class ServicesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createServiceDto: CreateServiceDto) {
     // Check slug uniqueness
@@ -40,6 +40,10 @@ export class ServicesService {
   async findAll(query: QueryServicesDto) {
     const { category, isActive, search, page = 1, limit = 20 } = query;
 
+    // Ensure page and limit are numbers (query params come as strings)
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 20;
+
     const where: any = {};
 
     if (category) {
@@ -47,7 +51,8 @@ export class ServicesService {
     }
 
     if (isActive !== undefined) {
-      where.isActive = isActive;
+      // Convert string 'true'/'false' to boolean (query params come as strings)
+      where.isActive = String(isActive) === 'true';
     }
 
     if (search) {
@@ -60,8 +65,8 @@ export class ServicesService {
     const [services, total] = await Promise.all([
       this.prisma.service.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum,
         orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
       }),
       this.prisma.service.count({ where }),
@@ -71,12 +76,13 @@ export class ServicesService {
       data: services,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
       },
     };
   }
+
 
   async findOne(id: string) {
     const service = await this.prisma.service.findUnique({

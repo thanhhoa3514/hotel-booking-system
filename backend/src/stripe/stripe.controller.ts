@@ -20,7 +20,7 @@ import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 export class StripeController {
   private readonly logger = new Logger(StripeController.name);
 
-  constructor(private readonly stripeService: StripeService) {}
+  constructor(private readonly stripeService: StripeService) { }
 
   /**
    * Create a Stripe checkout session
@@ -31,16 +31,25 @@ export class StripeController {
     @Body() dto: CreateCheckoutSessionDto,
     @CurrentUser('id') userId: string,
   ) {
-    const session = await this.stripeService.createCheckoutSession(
-      dto.bookingId,
-      userId,
-    );
+    this.logger.log(`Creating checkout session - bookingId: ${dto.bookingId}, userId: ${userId}`);
 
-    return {
-      sessionId: session.id,
-      url: session.url,
-    };
+    try {
+      const session = await this.stripeService.createCheckoutSession(
+        dto.bookingId,
+        userId,
+      );
+
+      return {
+        sessionId: session.id,
+        url: session.url,
+      };
+    } catch (error) {
+      this.logger.error(`Controller error: ${error.message}`);
+      this.logger.error(`Error stack: ${error.stack}`);
+      throw error;
+    }
   }
+
 
   /**
    * Stripe webhook endpoint

@@ -19,6 +19,7 @@ import {
     Search,
     HandPlatter,
     ClipboardList,
+    Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/common/theme-toggle";
@@ -38,6 +39,11 @@ const navItems = [
         title: "Quản lý phòng",
         href: "/admin/rooms",
         icon: BedDouble,
+    },
+    {
+        title: "Loại phòng",
+        href: "/admin/room-types",
+        icon: Layers,
     },
     {
         title: "Dịch vụ",

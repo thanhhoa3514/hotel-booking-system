@@ -31,24 +31,44 @@ export default function RoomsPage() {
     const roomTypes = roomTypesData?.data || [];
     const meta = roomTypesData?.meta;
 
+    // Helper function to parse amenities
+    const parseAmenities = (amenities: string[] | string | undefined): string[] => {
+        if (!amenities) return [];
+        try {
+            if (typeof amenities === 'string') {
+                const parsed = JSON.parse(amenities);
+                return Array.isArray(parsed) ? parsed : [];
+            }
+            return Array.isArray(amenities) ? amenities : [];
+        } catch {
+            return [];
+        }
+    };
+
     // Filter room types based on selected filters (client-side)
     const filteredRoomTypes = useMemo(() => {
         if (!roomTypes) return [];
 
         return roomTypes.filter((roomType: RoomType) => {
+            // Only show active room types
+            if (roomType.isActive === false) {
+                return false;
+            }
+
             // Filter by price
             if (roomType.basePrice < filters.priceRange[0] || roomType.basePrice > filters.priceRange[1]) {
                 return false;
             }
 
-            // Filter by max guests
-            if (filters.maxGuests && roomType.maxOccupancy < filters.maxGuests) {
+            // Filter by max guests (use capacity or maxOccupancy)
+            const guestCapacity = roomType.capacity || roomType.maxOccupancy || 0;
+            if (filters.maxGuests && guestCapacity < filters.maxGuests) {
                 return false;
             }
 
             // Filter by amenities
             if (filters.amenities.length > 0) {
-                const roomAmenities = roomType.amenities?.map(a => a.toLowerCase()) || [];
+                const roomAmenities = parseAmenities(roomType.amenities).map(a => a.toLowerCase());
                 const hasAllAmenities = filters.amenities.every(filterAmenity =>
                     roomAmenities.some(roomAmenity => roomAmenity.includes(filterAmenity.toLowerCase()))
                 );

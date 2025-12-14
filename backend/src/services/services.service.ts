@@ -51,7 +51,7 @@ export class ServicesService {
     }
 
     if (isActive !== undefined) {
-      // Convert string 'true'/'false' to boolean (query params come as strings)
+
       where.isActive = String(isActive) === 'true';
     }
 

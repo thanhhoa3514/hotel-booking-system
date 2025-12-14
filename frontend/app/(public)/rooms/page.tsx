@@ -21,8 +21,11 @@ export default function RoomsPage() {
 
     // Fetch room types from API with pagination
     const { data: roomTypesData, isLoading, error } = useQuery({
-        queryKey: ["roomTypes", page, limit],
-        queryFn: () => roomsApi.getRoomTypes({ page, limit }),
+        queryKey: ["roomTypes", page, limit, filters],
+        queryFn: () => roomsApi.getRoomTypes({
+            page,
+            limit,
+        }),
     });
 
     const roomTypes = roomTypesData?.data || [];

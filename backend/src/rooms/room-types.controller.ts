@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, Query } from '@nestjs/common';
 import { RoomTypesService } from './room-types.service';
 import { CreateRoomTypeDto, UpdateRoomTypeDto } from './dto/room-type.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
@@ -14,9 +14,13 @@ export class RoomTypesController {
     }
 
     @Get()
-    findAll() {
-        return this.roomTypesService.findAll();
+    findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
+        return this.roomTypesService.findAll({
+            page: page ? Number(page) : 1,
+            limit: limit ? Number(limit) : 20
+        });
     }
+
 
     @Get(':id')
     findOne(@Param('id') id: string) {

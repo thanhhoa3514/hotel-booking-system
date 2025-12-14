@@ -1,85 +1,108 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { CalendarIcon, Check, CreditCard, User, Building, ChevronLeft, ChevronRight } from "lucide-react";
-import { format } from "date-fns";
-import { DateRange } from "react-day-picker";
+    Check,
+    CreditCard,
+    User,
+    Building,
+    ChevronLeft,
+    ChevronRight,
+    Calendar,
+    Users,
+    ArrowLeft,
+    Loader2,
+} from "lucide-react";
+import { format, differenceInDays } from "date-fns";
+import { vi } from "date-fns/locale";
 import Image from "next/image";
+import Link from "next/link";
 import { toast } from "sonner";
+import { roomsApi } from "@/services/rooms.api";
+import { bookingsApi } from "@/services/bookings.api";
+import { stripeApi } from "@/services/stripe.api";
+import { useAuthStore } from "@/stores/auth.store";
 
-const STEPS = ["Room", "Details", "Payment", "Confirm"];
+const STEPS = ["Xác nhận", "Thông tin", "Thanh toán"];
 
-// Mock room data
-const ROOM_TYPES = [
-    { id: "1", name: "Deluxe Ocean View Suite", price: 299, image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400" },
-    { id: "2", name: "Premium Family Room", price: 399, image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400" },
-    { id: "3", name: "Standard Double Room", price: 149, image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400" },
-];
+const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+    }).format(amount);
+};
 
 function BookingContent() {
+    const router = useRouter();
     const searchParams = useSearchParams();
-    const preselectedRoom = searchParams.get("roomType");
+    const { user, isAuthenticated } = useAuthStore();
+
+    // Get params from URL
+    const roomTypeId = searchParams.get("roomTypeId");
+    const checkInParam = searchParams.get("checkIn");
+    const checkOutParam = searchParams.get("checkOut");
+    const guestsParam = searchParams.get("guests") || "2";
+
+    const checkInDate = checkInParam ? new Date(checkInParam) : null;
+    const checkOutDate = checkOutParam ? new Date(checkOutParam) : null;
+    const numberOfGuests = parseInt(guestsParam);
 
     const [currentStep, setCurrentStep] = useState(0);
-    const [dateRange, setDateRange] = useState<DateRange | undefined>();
-    const [selectedRoom, setSelectedRoom] = useState<string>(preselectedRoom || "");
-    const [guests, setGuests] = useState("2");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Guest details form state
     const [guestDetails, setGuestDetails] = useState({
-        fullName: "",
-        email: "",
-        phone: "",
+        fullName: user?.fullName || "",
+        email: user?.email || "",
+        phone: user?.phone || "",
         specialRequests: "",
     });
 
-    // Payment form state
-    const [paymentDetails, setPaymentDetails] = useState({
-        cardNumber: "",
-        expiryDate: "",
-        cvv: "",
-        cardholderName: "",
+    // Fetch room type
+    const { data: roomType, isLoading: isLoadingRoom } = useQuery({
+        queryKey: ["roomType", roomTypeId],
+        queryFn: () => roomsApi.getRoomType(roomTypeId!),
+        enabled: !!roomTypeId,
     });
 
-    const progress = ((currentStep + 1) / STEPS.length) * 100;
+    // Update form with user data when authenticated
+    useEffect(() => {
+        if (user) {
+            setGuestDetails(prev => ({
+                ...prev,
+                fullName: user.fullName || prev.fullName,
+                email: user.email || prev.email,
+                phone: user.phone || prev.phone,
+            }));
+        }
+    }, [user]);
 
-    const selectedRoomData = ROOM_TYPES.find((r) => r.id === selectedRoom);
-    const numberOfNights = dateRange?.from && dateRange?.to
-        ? Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24))
+    const nights = checkInDate && checkOutDate
+        ? differenceInDays(checkOutDate, checkInDate)
         : 0;
-    const totalPrice = selectedRoomData ? selectedRoomData.price * numberOfNights : 0;
+
+    const subtotal = roomType ? roomType.basePrice * nights : 0;
+    const serviceFee = Math.round(subtotal * 0.1);
+    const totalPrice = subtotal + serviceFee;
+
+    const progress = ((currentStep + 1) / STEPS.length) * 100;
 
     const canProceed = () => {
         switch (currentStep) {
             case 0:
-                return selectedRoom && dateRange?.from && dateRange?.to;
+                return roomType && checkInDate && checkOutDate && nights > 0;
             case 1:
                 return guestDetails.fullName && guestDetails.email && guestDetails.phone;
-            case 2:
-                return paymentDetails.cardNumber && paymentDetails.expiryDate && paymentDetails.cvv;
             default:
                 return true;
         }
@@ -97,15 +120,114 @@ function BookingContent() {
         }
     };
 
-    const handleSubmit = async () => {
+    const handleConfirmAndPay = async () => {
+        if (!roomType || !checkInDate || !checkOutDate) return;
+
+        // Check if user is logged in
+        if (!isAuthenticated || !user) {
+            toast.error("Vui lòng đăng nhập", {
+                description: "Bạn cần đăng nhập để đặt phòng.",
+            });
+            router.push(`/auth/login?redirect=/booking?roomTypeId=${roomTypeId}&checkIn=${checkInParam}&checkOut=${checkOutParam}&guests=${guestsParam}`);
+            return;
+        }
+
         setIsSubmitting(true);
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        setIsSubmitting(false);
-        toast.success("Booking confirmed!", {
-            description: "Check your email for confirmation details.",
-        });
+
+        try {
+            // Step 1: Check availability and get available room IDs
+            const availabilityData = {
+                roomTypeId: roomType.id,
+                checkInDate: checkInDate.toISOString(),
+                checkOutDate: checkOutDate.toISOString(),
+                numberOfRooms: 1,
+            };
+
+            const availability = await roomsApi.checkAvailability(availabilityData);
+
+            if (!availability.available || availability.availableRooms.length === 0) {
+                toast.error("Phòng không khả dụng", {
+                    description: "Không còn phòng trống trong khoảng thời gian này. Vui lòng chọn ngày khác.",
+                });
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Get the first available room ID
+            const selectedRoomId = availability.availableRooms[0].id;
+
+            // Step 2: Create booking with PENDING status
+            const bookingData = {
+                userId: user.id,
+                roomIds: [selectedRoomId],
+                checkInDate: checkInDate.toISOString(),
+                checkOutDate: checkOutDate.toISOString(),
+                guestName: guestDetails.fullName,
+                guestEmail: guestDetails.email,
+                guestPhone: guestDetails.phone,
+                numberOfGuests: numberOfGuests,
+                specialRequests: guestDetails.specialRequests || undefined,
+            };
+
+            const booking = await bookingsApi.createBooking(bookingData);
+
+            // Step 3: Create Stripe checkout session
+            const stripeSession = await stripeApi.createCheckoutSession(booking.id);
+
+            // Step 4: Redirect to Stripe
+            if (stripeSession.url) {
+                window.location.href = stripeSession.url;
+            } else {
+                throw new Error("No checkout URL returned");
+            }
+        } catch (error: any) {
+            console.error("Booking error:", error);
+            toast.error("Có lỗi xảy ra", {
+                description: error.response?.data?.message || "Vui lòng thử lại sau.",
+            });
+            setIsSubmitting(false);
+        }
     };
+
+
+    // Loading state
+    if (isLoadingRoom) {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4">
+                <div className="container mx-auto max-w-4xl">
+                    <Skeleton className="h-10 w-48 mx-auto mb-8" />
+                    <div className="grid gap-8 lg:grid-cols-3">
+                        <div className="lg:col-span-2">
+                            <Skeleton className="h-96 w-full rounded-2xl" />
+                        </div>
+                        <div>
+                            <Skeleton className="h-64 w-full rounded-2xl" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Missing data state
+    if (!roomTypeId || !checkInDate || !checkOutDate || !roomType) {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-slate-700 mb-4">Thông tin đặt phòng không hợp lệ</h1>
+                    <p className="text-slate-500 mb-6">Vui lòng chọn phòng và ngày trước khi đặt.</p>
+                    <Link href="/rooms">
+                        <Button>
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Quay lại chọn phòng
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    const primaryImage = roomType.images?.find(img => img.isPrimary) || roomType.images?.[0];
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4">
@@ -113,10 +235,10 @@ function BookingContent() {
                 {/* Header */}
                 <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-                        Complete Your Booking
+                        Hoàn tất đặt phòng
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400">
-                        Follow the steps below to reserve your room
+                        Theo các bước dưới đây để xác nhận đặt phòng
                     </p>
                 </div>
 
@@ -152,167 +274,223 @@ function BookingContent() {
                 <div className="grid gap-8 lg:grid-cols-3 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                     {/* Form Section */}
                     <div className="lg:col-span-2">
-                        <Card>
+                        <Card className="rounded-2xl shadow-lg border-0">
                             <CardContent className="p-6">
-                                {/* Step 1: Room Selection */}
+                                {/* Step 1: Xác nhận thông tin phòng */}
                                 {currentStep === 0 && (
                                     <div className="space-y-6 animate-in fade-in duration-300">
-                                        <div>
-                                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                                                <Building className="h-5 w-5" />
-                                                Select Your Room
-                                            </h2>
-                                            <div className="grid gap-4">
-                                                {ROOM_TYPES.map((room) => (
-                                                    <div
-                                                        key={room.id}
-                                                        onClick={() => setSelectedRoom(room.id)}
-                                                        className={`flex gap-4 p-4 border rounded-lg cursor-pointer transition-all hover:border-orange-500 ${selectedRoom === room.id
-                                                            ? "border-orange-600 bg-orange-50 dark:bg-orange-900/20"
-                                                            : "border-slate-200 dark:border-slate-700"
-                                                            }`}
-                                                    >
-                                                        <div className="relative w-24 h-24 rounded-md overflow-hidden flex-shrink-0">
-                                                            <Image src={room.image} alt={room.name} fill className="object-cover" />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h3 className="font-medium">{room.name}</h3>
-                                                            <p className="text-2xl font-bold text-orange-600">${room.price}<span className="text-sm font-normal text-slate-500">/night</span></p>
-                                                        </div>
-                                                        {selectedRoom === room.id && (
-                                                            <Check className="h-5 w-5 text-orange-600" />
-                                                        )}
-                                                    </div>
-                                                ))}
+                                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                                            <Building className="h-5 w-5 text-orange-500" />
+                                            Xác nhận thông tin đặt phòng
+                                        </h2>
+
+                                        {/* Room Info */}
+                                        <div className="flex gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                                            {primaryImage ? (
+                                                <div className="relative w-32 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                                                    <Image
+                                                        src={primaryImage.url}
+                                                        alt={roomType.name}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-32 h-24 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                    <Building className="h-8 w-8 text-orange-300" />
+                                                </div>
+                                            )}
+                                            <div className="flex-1">
+                                                <h3 className="font-semibold text-lg">{roomType.name}</h3>
+                                                <p className="text-2xl font-bold text-orange-600">
+                                                    {formatCurrency(roomType.basePrice)}
+                                                    <span className="text-sm font-normal text-slate-500">/đêm</span>
+                                                </p>
                                             </div>
                                         </div>
 
                                         <Separator />
 
-                                        <div className="grid gap-4 sm:grid-cols-2">
-                                            <div className="space-y-2">
-                                                <Label>Check-in / Check-out</Label>
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button variant="outline" className="w-full justify-start cursor-pointer">
-                                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                                            {dateRange?.from ? (
-                                                                dateRange.to ? (
-                                                                    <>{format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd")}</>
-                                                                ) : format(dateRange.from, "MMM dd, yyyy")
-                                                            ) : "Select dates"}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar mode="range" selected={dateRange} onSelect={setDateRange} numberOfMonths={2} />
-                                                    </PopoverContent>
-                                                </Popover>
+                                        {/* Booking Details */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                                                <div className="flex items-center gap-2 text-slate-500 mb-1">
+                                                    <Calendar className="h-4 w-4" />
+                                                    <span className="text-sm">Nhận phòng</span>
+                                                </div>
+                                                <p className="font-semibold">
+                                                    {format(checkInDate, "EEEE, dd/MM/yyyy", { locale: vi })}
+                                                </p>
                                             </div>
-                                            <div className="space-y-2">
-                                                <Label>Guests</Label>
-                                                <Select value={guests} onValueChange={setGuests}>
-                                                    <SelectTrigger className="cursor-pointer"><SelectValue /></SelectTrigger>
-                                                    <SelectContent>
-                                                        {[1, 2, 3, 4].map((n) => (
-                                                            <SelectItem key={n} value={String(n)} className="cursor-pointer">{n} Guest{n > 1 ? "s" : ""}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                                                <div className="flex items-center gap-2 text-slate-500 mb-1">
+                                                    <Calendar className="h-4 w-4" />
+                                                    <span className="text-sm">Trả phòng</span>
+                                                </div>
+                                                <p className="font-semibold">
+                                                    {format(checkOutDate, "EEEE, dd/MM/yyyy", { locale: vi })}
+                                                </p>
+                                            </div>
+                                            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                                                <div className="flex items-center gap-2 text-slate-500 mb-1">
+                                                    <Users className="h-4 w-4" />
+                                                    <span className="text-sm">Số khách</span>
+                                                </div>
+                                                <p className="font-semibold">{numberOfGuests} khách</p>
+                                            </div>
+                                            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                                                <div className="flex items-center gap-2 text-slate-500 mb-1">
+                                                    <Calendar className="h-4 w-4" />
+                                                    <span className="text-sm">Số đêm</span>
+                                                </div>
+                                                <p className="font-semibold">{nights} đêm</p>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Step 2: Guest Details */}
+                                {/* Step 2: Thông tin khách hàng */}
                                 {currentStep === 1 && (
                                     <div className="space-y-6 animate-in fade-in duration-300">
                                         <h2 className="text-xl font-semibold flex items-center gap-2">
-                                            <User className="h-5 w-5" />
-                                            Guest Information
+                                            <User className="h-5 w-5 text-orange-500" />
+                                            Thông tin khách hàng
                                         </h2>
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <div className="space-y-2">
-                                                <Label htmlFor="fullName">Full Name *</Label>
-                                                <Input id="fullName" value={guestDetails.fullName} onChange={(e) => setGuestDetails({ ...guestDetails, fullName: e.target.value })} placeholder="John Doe" />
+                                                <Label htmlFor="fullName">Họ và tên *</Label>
+                                                <Input
+                                                    id="fullName"
+                                                    value={guestDetails.fullName}
+                                                    onChange={(e) => setGuestDetails({ ...guestDetails, fullName: e.target.value })}
+                                                    placeholder="Nguyễn Văn A"
+                                                />
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="email">Email *</Label>
-                                                <Input id="email" type="email" value={guestDetails.email} onChange={(e) => setGuestDetails({ ...guestDetails, email: e.target.value })} placeholder="john@example.com" />
+                                                <Input
+                                                    id="email"
+                                                    type="email"
+                                                    value={guestDetails.email}
+                                                    onChange={(e) => setGuestDetails({ ...guestDetails, email: e.target.value })}
+                                                    placeholder="email@example.com"
+                                                />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="phone">Phone *</Label>
-                                                <Input id="phone" value={guestDetails.phone} onChange={(e) => setGuestDetails({ ...guestDetails, phone: e.target.value })} placeholder="+1 234 567 890" />
+                                                <Label htmlFor="phone">Số điện thoại *</Label>
+                                                <Input
+                                                    id="phone"
+                                                    value={guestDetails.phone}
+                                                    onChange={(e) => setGuestDetails({ ...guestDetails, phone: e.target.value })}
+                                                    placeholder="0901 234 567"
+                                                />
                                             </div>
                                             <div className="space-y-2 sm:col-span-2">
-                                                <Label htmlFor="requests">Special Requests</Label>
-                                                <Input id="requests" value={guestDetails.specialRequests} onChange={(e) => setGuestDetails({ ...guestDetails, specialRequests: e.target.value })} placeholder="Any special requirements..." />
+                                                <Label htmlFor="requests">Yêu cầu đặc biệt (không bắt buộc)</Label>
+                                                <Textarea
+                                                    id="requests"
+                                                    value={guestDetails.specialRequests}
+                                                    onChange={(e) => setGuestDetails({ ...guestDetails, specialRequests: e.target.value })}
+                                                    placeholder="Ví dụ: Cần phòng tầng cao, giường phụ..."
+                                                    rows={3}
+                                                />
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Step 3: Payment */}
+                                {/* Step 3: Thanh toán */}
                                 {currentStep === 2 && (
                                     <div className="space-y-6 animate-in fade-in duration-300">
                                         <h2 className="text-xl font-semibold flex items-center gap-2">
-                                            <CreditCard className="h-5 w-5" />
-                                            Payment Details
+                                            <CreditCard className="h-5 w-5 text-orange-500" />
+                                            Xác nhận & Thanh toán
                                         </h2>
-                                        <div className="grid gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="cardholderName">Cardholder Name</Label>
-                                                <Input id="cardholderName" value={paymentDetails.cardholderName} onChange={(e) => setPaymentDetails({ ...paymentDetails, cardholderName: e.target.value })} placeholder="JOHN DOE" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="cardNumber">Card Number</Label>
-                                                <Input id="cardNumber" value={paymentDetails.cardNumber} onChange={(e) => setPaymentDetails({ ...paymentDetails, cardNumber: e.target.value })} placeholder="1234 5678 9012 3456" />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="expiryDate">Expiry Date</Label>
-                                                    <Input id="expiryDate" value={paymentDetails.expiryDate} onChange={(e) => setPaymentDetails({ ...paymentDetails, expiryDate: e.target.value })} placeholder="MM/YY" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="cvv">CVV</Label>
-                                                    <Input id="cvv" value={paymentDetails.cvv} onChange={(e) => setPaymentDetails({ ...paymentDetails, cvv: e.target.value })} placeholder="123" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
 
-                                {/* Step 4: Confirmation */}
-                                {currentStep === 3 && (
-                                    <div className="space-y-6 animate-in fade-in duration-300 text-center">
-                                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 mb-4">
-                                            <Check className="h-8 w-8" />
+                                        {/* Summary */}
+                                        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 space-y-3">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-600">Phòng:</span>
+                                                <span className="font-medium">{roomType.name}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-600">Ngày:</span>
+                                                <span className="font-medium">
+                                                    {format(checkInDate, "dd/MM")} - {format(checkOutDate, "dd/MM/yyyy")}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-600">Khách:</span>
+                                                <span className="font-medium">{guestDetails.fullName}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-600">Email:</span>
+                                                <span className="font-medium">{guestDetails.email}</span>
+                                            </div>
+                                            <Separator />
+                                            <div className="flex justify-between text-lg font-bold">
+                                                <span>Tổng cộng:</span>
+                                                <span className="text-orange-600">{formatCurrency(totalPrice)}</span>
+                                            </div>
                                         </div>
-                                        <h2 className="text-2xl font-semibold">Review & Confirm</h2>
-                                        <p className="text-slate-500">Please review your booking details before confirming.</p>
-                                        <div className="text-left bg-slate-50 dark:bg-slate-900 rounded-lg p-4 space-y-2">
-                                            <p><strong>Room:</strong> {selectedRoomData?.name}</p>
-                                            <p><strong>Dates:</strong> {dateRange?.from && format(dateRange.from, "MMM dd, yyyy")} - {dateRange?.to && format(dateRange.to, "MMM dd, yyyy")}</p>
-                                            <p><strong>Guest:</strong> {guestDetails.fullName}</p>
-                                            <p><strong>Email:</strong> {guestDetails.email}</p>
-                                            <p><strong>Total:</strong> <span className="text-xl font-bold text-orange-600">${totalPrice}</span></p>
+
+                                        {/* Stripe Notice */}
+                                        <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-800">
+                                            <p className="text-sm text-blue-700 dark:text-blue-300">
+                                                <strong>Bảo mật:</strong> Bạn sẽ được chuyển đến trang thanh toán an toàn của Stripe để hoàn tất giao dịch.
+                                            </p>
                                         </div>
+
+                                        {!isAuthenticated && (
+                                            <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
+                                                <p className="text-sm text-amber-700 dark:text-amber-300">
+                                                    <strong>Lưu ý:</strong> Đăng nhập để lưu thông tin đặt phòng vào tài khoản của bạn.{" "}
+                                                    <Link href="/auth/login" className="underline font-medium">
+                                                        Đăng nhập ngay
+                                                    </Link>
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
                                 {/* Navigation */}
                                 <div className="flex justify-between mt-8 pt-6 border-t">
-                                    <Button variant="outline" onClick={handleBack} disabled={currentStep === 0} className="cursor-pointer">
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleBack}
+                                        disabled={currentStep === 0}
+                                        className="cursor-pointer"
+                                    >
                                         <ChevronLeft className="h-4 w-4 mr-2" />
-                                        Back
+                                        Quay lại
                                     </Button>
                                     {currentStep < STEPS.length - 1 ? (
-                                        <Button onClick={handleNext} disabled={!canProceed()} className="bg-orange-600 hover:bg-orange-700 cursor-pointer">
-                                            Next
+                                        <Button
+                                            onClick={handleNext}
+                                            disabled={!canProceed()}
+                                            className="bg-orange-600 hover:bg-orange-700 cursor-pointer"
+                                        >
+                                            Tiếp tục
                                             <ChevronRight className="h-4 w-4 ml-2" />
                                         </Button>
                                     ) : (
-                                        <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 cursor-pointer">
-                                            {isSubmitting ? "Processing..." : "Confirm Booking"}
+                                        <Button
+                                            onClick={handleConfirmAndPay}
+                                            disabled={isSubmitting}
+                                            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 cursor-pointer"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                    Đang xử lý...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CreditCard className="h-4 w-4 mr-2" />
+                                                    Thanh toán với Stripe
+                                                </>
+                                            )}
                                         </Button>
                                     )}
                                 </div>
@@ -322,36 +500,39 @@ function BookingContent() {
 
                     {/* Summary Sidebar */}
                     <div className="lg:col-span-1">
-                        <Card className="sticky top-24">
+                        <Card className="sticky top-24 rounded-2xl shadow-lg border-0">
                             <CardHeader>
-                                <CardTitle>Booking Summary</CardTitle>
+                                <CardTitle>Tóm tắt đặt phòng</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {selectedRoomData ? (
-                                    <>
-                                        <div className="relative aspect-video rounded-lg overflow-hidden">
-                                            <Image src={selectedRoomData.image} alt={selectedRoomData.name} fill className="object-cover" />
-                                        </div>
-                                        <h3 className="font-semibold">{selectedRoomData.name}</h3>
-                                        <div className="space-y-2 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Price per night</span>
-                                                <span>${selectedRoomData.price}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Nights</span>
-                                                <span>{numberOfNights || "-"}</span>
-                                            </div>
-                                            <Separator />
-                                            <div className="flex justify-between text-lg font-bold">
-                                                <span>Total</span>
-                                                <span className="text-orange-600">${totalPrice || "-"}</span>
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p className="text-slate-500 text-center py-8">Select a room to see summary</p>
+                                {primaryImage && (
+                                    <div className="relative aspect-video rounded-lg overflow-hidden">
+                                        <Image
+                                            src={primaryImage.url}
+                                            alt={roomType.name}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </div>
                                 )}
+                                <h3 className="font-semibold">{roomType.name}</h3>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">
+                                            {formatCurrency(roomType.basePrice)} x {nights} đêm
+                                        </span>
+                                        <span>{formatCurrency(subtotal)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Phí dịch vụ</span>
+                                        <span>{formatCurrency(serviceFee)}</span>
+                                    </div>
+                                    <Separator />
+                                    <div className="flex justify-between text-lg font-bold">
+                                        <span>Tổng cộng</span>
+                                        <span className="text-orange-600">{formatCurrency(totalPrice)}</span>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -372,3 +553,4 @@ export default function BookingPage() {
         </Suspense>
     );
 }
+

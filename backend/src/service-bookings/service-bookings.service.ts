@@ -249,6 +249,10 @@ export class ServiceBookingsService {
       limit = 20,
     } = query;
 
+    // Ensure page and limit are numbers (query params come as strings)
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 20;
+
     const where: any = {};
 
     if (status) where.status = status;
@@ -274,8 +278,8 @@ export class ServiceBookingsService {
     const [serviceBookings, total] = await Promise.all([
       this.prisma.serviceBooking.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum,
         include: {
           service: {
             select: {
@@ -309,12 +313,13 @@ export class ServiceBookingsService {
       data: serviceBookings,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
       },
     };
   }
+
 
   /**
    * Find one service booking

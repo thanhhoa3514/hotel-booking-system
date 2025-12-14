@@ -373,6 +373,10 @@ export class BookingsService {
       limit = 20,
     } = query;
 
+    // Ensure page and limit are numbers
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+
     const where: any = {};
 
     if (status) {
@@ -414,22 +418,24 @@ export class BookingsService {
           },
         },
         orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum,
       }),
       this.prisma.booking.count({ where }),
     ]);
+
 
     return {
       data: bookings,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
       },
     };
   }
+
 
   /**
    * Find one booking by ID

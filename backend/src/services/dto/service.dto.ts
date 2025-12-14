@@ -52,15 +52,16 @@ export const CreateServiceSchema = z.object({
   maxCapacity: z.number().int().positive().optional(),
   operatingHours: OperatingHoursSchema,
   duration: z.number().int().positive().optional(), // in minutes
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().optional().transform(val => val === '' ? undefined : val).pipe(z.string().url().optional()),
   displayOrder: z.number().int().default(0).optional(),
+
 });
 
-export class CreateServiceDto extends createZodDto(CreateServiceSchema) {}
+export class CreateServiceDto extends createZodDto(CreateServiceSchema) { }
 
 // Update Service DTO
 export const UpdateServiceSchema = CreateServiceSchema.partial();
-export class UpdateServiceDto extends createZodDto(UpdateServiceSchema) {}
+export class UpdateServiceDto extends createZodDto(UpdateServiceSchema) { }
 
 // Query Services DTO
 export const QueryServicesSchema = z.object({
@@ -71,4 +72,4 @@ export const QueryServicesSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(20).optional(),
 });
 
-export class QueryServicesDto extends createZodDto(QueryServicesSchema) {}
+export class QueryServicesDto extends createZodDto(QueryServicesSchema) { }

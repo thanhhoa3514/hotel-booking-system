@@ -130,4 +130,97 @@ export class AuthService {
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
+
+  /**
+   * Validate OAuth login (Google, Facebook, etc.)
+   * - Find user by provider + providerId
+   * - If not found, find by email and link provider
+   * - If email not found, create new user + provider
+   */
+  async validateOAuthLogin(oauthData: {
+    provider: 'GOOGLE' | 'FACEBOOK' | 'APPLE';
+    providerId: string;
+    email: string;
+    fullName: string;
+    avatarUrl?: string;
+  }) {
+    const { provider, providerId, email, fullName, avatarUrl } = oauthData;
+
+    // 1. Check if provider is already linked to a user
+    const existingProvider = await this.prisma.userProvider.findUnique({
+      where: {
+        provider_providerId: {
+          provider,
+          providerId,
+        },
+      },
+      include: {
+        user: {
+          include: { role: true },
+        },
+      },
+    });
+
+    if (existingProvider) {
+      // User already has this provider linked
+      const { password, ...userWithoutPassword } = existingProvider.user;
+      return this.login(userWithoutPassword);
+    }
+
+    // 2. Check if user with this email exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+      include: { role: true },
+    });
+
+    if (existingUser) {
+      // Link provider to existing user
+      await this.prisma.userProvider.create({
+        data: {
+          provider,
+          providerId,
+          userId: existingUser.id,
+        },
+      });
+
+      // Update avatar if not set
+      if (!existingUser.avatarUrl && avatarUrl) {
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { avatarUrl },
+        });
+      }
+
+      const { password, ...userWithoutPassword } = existingUser;
+      return this.login(userWithoutPassword);
+    }
+
+    // 3. Create new user with provider
+    const guestRole = await this.prisma.role.findUnique({
+      where: { name: 'GUEST' },
+    });
+
+    if (!guestRole) {
+      throw new NotFoundException('Không tìm thấy vai trò mặc định');
+    }
+
+    const newUser = await this.prisma.user.create({
+      data: {
+        email,
+        fullName,
+        avatarUrl,
+        roleId: guestRole.id,
+        status: 'ACTIVE',
+        providers: {
+          create: {
+            provider,
+            providerId,
+          },
+        },
+      },
+      include: { role: true },
+    });
+
+    return this.login(newUser);
+  }
 }

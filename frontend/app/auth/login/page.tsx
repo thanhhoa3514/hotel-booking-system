@@ -158,11 +158,19 @@ export default function LoginPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" type="button" disabled>
+          <Button
+            className="cursor-pointer"
+            variant="outline"
+            type="button"
+            disabled={isLoading}
+            onClick={() => {
+              window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/google`;
+            }}
+          >
             <Icons.google className="mr-2 h-4 w-4" />
             Google
           </Button>
-          <Button variant="outline" type="button" disabled>
+          <Button className="cursor-pointer" variant="outline" type="button" disabled>
             <Icons.github className="mr-2 h-4 w-4" />
             GitHub
           </Button>

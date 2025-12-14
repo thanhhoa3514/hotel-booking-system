@@ -17,6 +17,8 @@ import {
     ChevronRight,
     Bell,
     Search,
+    HandPlatter,
+    ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/common/theme-toggle";
@@ -38,6 +40,16 @@ const navItems = [
         icon: BedDouble,
     },
     {
+        title: "Dịch vụ",
+        href: "/admin/services",
+        icon: HandPlatter,
+    },
+    {
+        title: "Đặt dịch vụ",
+        href: "/admin/service-bookings",
+        icon: ClipboardList,
+    },
+    {
         title: "Quản lý người dùng",
         href: "/admin/users",
         icon: Users,
@@ -48,6 +60,7 @@ const navItems = [
         icon: Settings,
     },
 ];
+
 
 export default function AdminLayout({
     children,

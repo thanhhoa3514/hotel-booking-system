@@ -1,160 +1,158 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import {
-    Search,
-    Filter,
-    Plus,
-    MoreHorizontal,
-    Calendar,
-    CheckCircle2,
-    Clock,
-    XCircle,
-    Eye,
-    Edit,
-    Trash2,
-} from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-// Mock bookings data
-const bookings = [
-    {
-        id: "BK001",
-        guest: "Nguyễn Văn A",
-        email: "nguyenvana@email.com",
-        phone: "0901234567",
-        room: "Deluxe 301",
-        roomType: "Deluxe",
-        checkIn: "2024-12-11",
-        checkOut: "2024-12-13",
-        nights: 2,
-        guests: 2,
-        status: "confirmed",
-        amount: 2400000,
-        createdAt: "2024-12-09",
-    },
-    {
-        id: "BK002",
-        guest: "Trần Thị B",
-        email: "tranthib@email.com",
-        phone: "0912345678",
-        room: "Suite 501",
-        roomType: "Suite",
-        checkIn: "2024-12-12",
-        checkOut: "2024-12-15",
-        nights: 3,
-        guests: 4,
-        status: "pending",
-        amount: 5600000,
-        createdAt: "2024-12-10",
-    },
-    {
-        id: "BK003",
-        guest: "Lê Văn C",
-        email: "levanc@email.com",
-        phone: "0923456789",
-        room: "Standard 102",
-        roomType: "Standard",
-        checkIn: "2024-12-11",
-        checkOut: "2024-12-12",
-        nights: 1,
-        guests: 1,
-        status: "checked-in",
-        amount: 800000,
-        createdAt: "2024-12-08",
-    },
-    {
-        id: "BK004",
-        guest: "Phạm Thị D",
-        email: "phamthid@email.com",
-        phone: "0934567890",
-        room: "Deluxe 205",
-        roomType: "Deluxe",
-        checkIn: "2024-12-10",
-        checkOut: "2024-12-11",
-        nights: 1,
-        guests: 2,
-        status: "checked-out",
-        amount: 1200000,
-        createdAt: "2024-12-07",
-    },
-    {
-        id: "BK005",
-        guest: "Hoàng Văn E",
-        email: "hoangvane@email.com",
-        phone: "0945678901",
-        room: "Suite 502",
-        roomType: "Suite",
-        checkIn: "2024-12-14",
-        checkOut: "2024-12-17",
-        nights: 3,
-        guests: 3,
-        status: "cancelled",
-        amount: 4800000,
-        createdAt: "2024-12-06",
-    },
-];
-
-const getStatusConfig = (status: string) => {
-    switch (status) {
-        case "confirmed":
-            return { label: "Đã xác nhận", icon: CheckCircle2, className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" };
-        case "pending":
-            return { label: "Chờ xử lý", icon: Clock, className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" };
-        case "checked-in":
-            return { label: "Đã nhận phòng", icon: CheckCircle2, className: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" };
-        case "checked-out":
-            return { label: "Đã trả phòng", icon: CheckCircle2, className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400" };
-        case "cancelled":
-            return { label: "Đã hủy", icon: XCircle, className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" };
-        default:
-            return { label: status, icon: Clock, className: "bg-slate-100 text-slate-700" };
-    }
-};
-
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND",
-    }).format(amount);
-};
+import { Plus, Loader2 } from "lucide-react";
+import { BookingStats } from "./components/BookingStats";
+import { BookingFilters } from "./components/BookingFilters";
+import { BookingTable } from "./components/BookingTable";
+import { AddServiceDialog } from "./components/AddServiceDialog";
+import { Booking, BookingStatus } from "@/types/booking";
+import { bookingsApi } from "@/services/bookings.api";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminBookingsPage() {
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [page, setPage] = useState(1);
+    const [addServiceBooking, setAddServiceBooking] = useState<Booking | null>(null);
+    const limit = 20;
 
-    const filteredBookings = bookings.filter((booking) => {
-        const matchesSearch =
-            booking.guest.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            booking.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            booking.room.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
-        return matchesSearch && matchesStatus;
+    // Fetch bookings from API
+    const { data: bookingsData, isLoading, error } = useQuery({
+        queryKey: ["admin-bookings", statusFilter, page],
+        queryFn: () => bookingsApi.getBookings({
+            status: statusFilter !== "all" ? statusFilter : undefined,
+            page,
+            limit,
+        }),
     });
+
+    // Cancel booking mutation
+    const cancelMutation = useMutation({
+        mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+            bookingsApi.cancelBooking(id, reason),
+        onSuccess: () => {
+            toast.success("Đã hủy đặt phòng!");
+            queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+        },
+        onError: (error: any) => {
+            toast.error("Lỗi", {
+                description: error.response?.data?.message || "Không thể hủy đặt phòng",
+            });
+        },
+    });
+
+    // Update status mutation
+    const updateStatusMutation = useMutation({
+        mutationFn: ({ id, status }: { id: string; status: string }) =>
+            bookingsApi.updateBookingStatus(id, status),
+        onSuccess: () => {
+            toast.success("Đã cập nhật trạng thái!");
+            queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+        },
+        onError: (error: any) => {
+            toast.error("Lỗi", {
+                description: error.response?.data?.message || "Không thể cập nhật trạng thái",
+            });
+        },
+    });
+
+    const bookings = bookingsData?.data || [];
+
+    // Handlers
+    const handleView = (booking: Booking) => {
+        console.log("View booking", booking);
+        // TODO: Open view dialog
+    };
+
+    const handleEdit = (booking: Booking) => {
+        console.log("Edit booking", booking);
+        // TODO: Open edit dialog
+    };
+
+    const handleCancel = (booking: Booking) => {
+        if (confirm(`Bạn có chắc muốn hủy đặt phòng ${booking.bookingCode}?`)) {
+            cancelMutation.mutate({ id: booking.id, reason: "Cancelled by admin" });
+        }
+    };
+
+    const handleApprove = (booking: Booking) => {
+        updateStatusMutation.mutate({ id: booking.id, status: "CONFIRMED" });
+    };
+
+    const handleAddService = (booking: Booking) => {
+        setAddServiceBooking(booking);
+    };
+
+    // Client-side search filter (for search within loaded data)
+    const filteredBookings = bookings.filter((booking) => {
+        if (!searchQuery) return true;
+        const matchesSearch =
+            booking.guestName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            booking.bookingCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            booking.rooms?.some(r => r.room?.roomNumber?.includes(searchQuery));
+        return matchesSearch;
+    });
+
+    // Loading skeleton
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                            Quản lý đặt phòng
+                        </h1>
+                        <p className="text-muted-foreground mt-1">
+                            Theo dõi và quản lý tất cả đặt phòng khách sạn
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[...Array(4)].map((_, i) => (
+                        <Skeleton key={i} className="h-24 rounded-xl" />
+                    ))}
+                </div>
+
+                <Skeleton className="h-12 rounded-xl" />
+
+                <div className="space-y-2">
+                    {[...Array(5)].map((_, i) => (
+                        <Skeleton key={i} className="h-16 rounded-lg" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                            Quản lý đặt phòng
+                        </h1>
+                    </div>
+                </div>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <p className="text-red-500 mb-4">Có lỗi xảy ra khi tải dữ liệu</p>
+                    <Button
+                        variant="outline"
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-bookings"] })}
+                    >
+                        Thử lại
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -165,7 +163,7 @@ export default function AdminBookingsPage() {
                         Quản lý đặt phòng
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Theo dõi và quản lý tất cả đặt phòng
+                        Theo dõi và quản lý tất cả đặt phòng khách sạn
                     </p>
                 </div>
                 <Button className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30">
@@ -174,141 +172,67 @@ export default function AdminBookingsPage() {
                 </Button>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                    { label: "Tổng đặt phòng", value: bookings.length, color: "text-orange-600" },
-                    { label: "Chờ xử lý", value: bookings.filter(b => b.status === "pending").length, color: "text-amber-600" },
-                    { label: "Đã xác nhận", value: bookings.filter(b => b.status === "confirmed").length, color: "text-green-600" },
-                    { label: "Đã hủy", value: bookings.filter(b => b.status === "cancelled").length, color: "text-red-600" },
-                ].map((stat, index) => (
-                    <Card key={index} className="border-0 shadow-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl">
-                        <CardContent className="p-4 text-center">
-                            <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
-                            <p className="text-sm text-muted-foreground">{stat.label}</p>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+            {/* Stats / Tabs */}
+            <BookingStats
+                bookings={bookings}
+                activeStatus={statusFilter}
+                onStatusChange={setStatusFilter}
+            />
 
             {/* Filters */}
-            <Card className="border-0 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl">
-                <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Tìm theo tên, mã đặt phòng, phòng..."
-                                className="pl-10 rounded-xl border-0 bg-slate-100 dark:bg-slate-800"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-full sm:w-48 rounded-xl border-0 bg-slate-100 dark:bg-slate-800">
-                                <Filter className="h-4 w-4 mr-2" />
-                                <SelectValue placeholder="Trạng thái" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Tất cả</SelectItem>
-                                <SelectItem value="pending">Chờ xử lý</SelectItem>
-                                <SelectItem value="confirmed">Đã xác nhận</SelectItem>
-                                <SelectItem value="checked-in">Đã nhận phòng</SelectItem>
-                                <SelectItem value="checked-out">Đã trả phòng</SelectItem>
-                                <SelectItem value="cancelled">Đã hủy</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
+            <BookingFilters
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+            />
 
-            {/* Bookings Table */}
-            <Card className="border-0 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl overflow-hidden">
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-slate-50/50 dark:bg-slate-800/50">
-                                <TableHead className="font-semibold">Mã</TableHead>
-                                <TableHead className="font-semibold">Khách hàng</TableHead>
-                                <TableHead className="font-semibold">Phòng</TableHead>
-                                <TableHead className="font-semibold">Check-in/out</TableHead>
-                                <TableHead className="font-semibold">Số đêm</TableHead>
-                                <TableHead className="font-semibold">Trạng thái</TableHead>
-                                <TableHead className="font-semibold">Tổng tiền</TableHead>
-                                <TableHead className="font-semibold text-right">Thao tác</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredBookings.map((booking) => {
-                                const statusConfig = getStatusConfig(booking.status);
-                                return (
-                                    <TableRow key={booking.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                                        <TableCell className="font-mono text-sm font-medium text-orange-600">
-                                            {booking.id}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <p className="font-medium">{booking.guest}</p>
-                                                <p className="text-xs text-muted-foreground">{booking.phone}</p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <p className="font-medium">{booking.room}</p>
-                                                <p className="text-xs text-muted-foreground">{booking.roomType}</p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-1 text-sm">
-                                                <Calendar className="h-3 w-3 text-muted-foreground" />
-                                                <span>{booking.checkIn}</span>
-                                                <span className="text-muted-foreground">→</span>
-                                                <span>{booking.checkOut}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="font-medium">{booking.nights}</span>
-                                            <span className="text-muted-foreground text-sm"> đêm</span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge className={`${statusConfig.className} border-0 rounded-lg`}>
-                                                <statusConfig.icon className="h-3 w-3 mr-1" />
-                                                {statusConfig.label}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="font-semibold">
-                                            {formatCurrency(booking.amount)}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="rounded-lg">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="rounded-xl">
-                                                    <DropdownMenuItem className="cursor-pointer">
-                                                        <Eye className="h-4 w-4 mr-2" />
-                                                        Xem chi tiết
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="cursor-pointer">
-                                                        <Edit className="h-4 w-4 mr-2" />
-                                                        Chỉnh sửa
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="cursor-pointer text-red-600">
-                                                        <Trash2 className="h-4 w-4 mr-2" />
-                                                        Hủy đặt phòng
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+            {/* Table */}
+            <BookingTable
+                bookings={filteredBookings}
+                onView={handleView}
+                onEdit={handleEdit}
+                onCancel={handleCancel}
+                onApprove={handleApprove}
+                onAddService={handleAddService}
+            />
+
+            {/* Add Service Dialog */}
+            <AddServiceDialog
+                booking={addServiceBooking}
+                open={!!addServiceBooking}
+                onClose={() => setAddServiceBooking(null)}
+            />
+
+            {/* Pagination info */}
+            {bookingsData?.meta && (
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>
+                        Hiển thị {filteredBookings.length} / {bookingsData.meta.total} đặt phòng
+                    </span>
+                    {bookingsData.meta.totalPages > 1 && (
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={page <= 1}
+                                onClick={() => setPage(p => p - 1)}
+                            >
+                                Trước
+                            </Button>
+                            <span className="flex items-center px-2">
+                                Trang {page} / {bookingsData.meta.totalPages}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={page >= bookingsData.meta.totalPages}
+                                onClick={() => setPage(p => p + 1)}
+                            >
+                                Sau
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

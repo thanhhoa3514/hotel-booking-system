@@ -32,7 +32,11 @@ export function SearchBar() {
 
     const handleSearch = () => {
         // Navigate to rooms page with search params
-        router.push("/rooms");
+        const params = new URLSearchParams();
+        if (date?.from) params.append("checkIn", date.from.toISOString());
+        if (date?.to) params.append("checkOut", date.to.toISOString());
+        if (guests) params.append("guests", guests);
+        router.push(`/rooms?${params.toString()}`);
     };
 
     return (

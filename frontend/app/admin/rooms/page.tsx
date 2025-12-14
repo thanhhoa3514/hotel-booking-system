@@ -16,6 +16,7 @@ import {
     NewRoomData,
     EditRoomData,
 } from "./components";
+import { AddRoomTypeDialog } from "./components/AddRoomTypeDialog";
 
 const defaultNewRoom: NewRoomData = {
     roomNumber: "",
@@ -61,10 +62,11 @@ export default function AdminRoomsPage() {
     });
 
     // Fetch room types
-    const { data: roomTypes = [] } = useQuery({
+    const { data: roomTypesData } = useQuery({
         queryKey: ["room-types"],
         queryFn: () => roomsApi.getRoomTypes(),
     });
+    const roomTypes = roomTypesData?.data || [];
 
     // Create room mutation
     const createMutation = useMutation({
@@ -217,15 +219,18 @@ export default function AdminRoomsPage() {
                     </p>
                 </div>
 
-                <AddRoomDialog
-                    isOpen={isAddDialogOpen}
-                    newRoom={newRoom}
-                    roomTypes={roomTypes}
-                    isSubmitting={createMutation.isPending}
-                    onOpenChange={setIsAddDialogOpen}
-                    onNewRoomChange={setNewRoom}
-                    onSubmit={handleAddRoom}
-                />
+                <div className="flex gap-2">
+                    <AddRoomTypeDialog />
+                    <AddRoomDialog
+                        isOpen={isAddDialogOpen}
+                        newRoom={newRoom}
+                        roomTypes={roomTypes}
+                        isSubmitting={createMutation.isPending}
+                        onOpenChange={setIsAddDialogOpen}
+                        onNewRoomChange={setNewRoom}
+                        onSubmit={handleAddRoom}
+                    />
+                </div>
             </div>
 
             {/* Stats Cards */}

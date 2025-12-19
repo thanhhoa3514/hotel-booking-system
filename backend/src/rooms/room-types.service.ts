@@ -16,7 +16,14 @@ export class RoomTypesService {
     }
 
     async create(createRoomTypeDto: CreateRoomTypeDto) {
-        const slug = this.generateSlug(createRoomTypeDto.name);
+        const { images, ...roomTypeData } = createRoomTypeDto;
+        const slug = this.generateSlug(roomTypeData.name);
+
+        // Debug: Log received data
+        console.log('=== CREATE ROOM TYPE ===');
+        console.log('roomTypeData:', roomTypeData);
+        console.log('images received:', images);
+        console.log('images length:', images?.length || 0);
 
         // Check slug uniqueness
         const existing = await this.prisma.roomType.findUnique({
@@ -24,14 +31,48 @@ export class RoomTypesService {
         });
 
         if (existing) {
-            throw new ConflictException(`Room Type with name "${createRoomTypeDto.name}" already exists`);
+            throw new ConflictException(`Room Type with name "${roomTypeData.name}" already exists`);
+        }
+
+        // Ensure only one image is marked as primary
+        let processedImages = images || [];
+        if (processedImages.length > 0) {
+            const hasPrimary = processedImages.some(img => img.isPrimary);
+            if (!hasPrimary) {
+                // Set first image as primary if none specified
+                processedImages = processedImages.map((img, index) => ({
+                    ...img,
+                    isPrimary: index === 0,
+                }));
+            } else {
+                // Ensure only one is primary
+                let foundPrimary = false;
+                processedImages = processedImages.map(img => {
+                    if (img.isPrimary && !foundPrimary) {
+                        foundPrimary = true;
+                        return img;
+                    }
+                    return { ...img, isPrimary: false };
+                });
+            }
         }
 
         return this.prisma.roomType.create({
             data: {
-                ...createRoomTypeDto,
+                ...roomTypeData,
                 slug,
-                amenities: createRoomTypeDto.amenities ? JSON.stringify(createRoomTypeDto.amenities) : [],
+                amenities: roomTypeData.amenities || [],
+                images: processedImages.length > 0 ? {
+                    create: processedImages.map((img, index) => ({
+                        url: img.url,
+                        altText: img.altText,
+                        isPrimary: img.isPrimary,
+                        displayOrder: img.displayOrder ?? index,
+                    })),
+                } : undefined,
+            },
+            include: {
+                images: true,
             },
         });
     }
@@ -81,30 +122,65 @@ export class RoomTypesService {
     async update(id: string, updateRoomTypeDto: UpdateRoomTypeDto) {
         await this.findOne(id); // Ensure exists
 
+        const { images, ...roomTypeData } = updateRoomTypeDto;
+
         let slug;
-        if (updateRoomTypeDto.name) {
-            slug = this.generateSlug(updateRoomTypeDto.name);
+        if (roomTypeData.name) {
+            slug = this.generateSlug(roomTypeData.name);
             // Verify slug uniqueness if name changed
             const existing = await this.prisma.roomType.findUnique({ where: { slug } });
             if (existing && existing.id !== id) {
-                throw new ConflictException(`Room Type with name "${updateRoomTypeDto.name}" already exists`);
+                throw new ConflictException(`Room Type with name "${roomTypeData.name}" already exists`);
             }
         }
 
-        const data: any = { ...updateRoomTypeDto };
+        const data: any = { ...roomTypeData };
         if (slug) data.slug = slug;
-        if (updateRoomTypeDto.amenities) {
-            data.amenities = JSON.stringify(updateRoomTypeDto.amenities);
+
+        // Handle images update: delete all existing and create new ones
+        if (images !== undefined) {
+            // Delete existing images
+            await this.prisma.roomImage.deleteMany({
+                where: { roomTypeId: id },
+            });
+
+            // Create new images if provided
+            if (images && images.length > 0) {
+                await this.prisma.roomImage.createMany({
+                    data: images.map((img, index) => ({
+                        url: img.url,
+                        altText: img.altText,
+                        isPrimary: img.isPrimary ?? (index === 0),
+                        displayOrder: img.displayOrder ?? index,
+                        roomTypeId: id,
+                    })),
+                });
+            }
         }
 
         return this.prisma.roomType.update({
             where: { id },
             data,
+            include: {
+                images: true,
+            },
         });
     }
 
     async remove(id: string) {
-        await this.findOne(id);
+        const roomType = await this.findOne(id);
+
+        // Check if any rooms are using this room type
+        const roomsCount = await this.prisma.room.count({
+            where: { typeId: id },
+        });
+
+        if (roomsCount > 0) {
+            throw new ConflictException(
+                `Không thể xóa loại phòng "${roomType.name}" vì có ${roomsCount} phòng đang sử dụng loại phòng này`
+            );
+        }
+
         return this.prisma.roomType.delete({
             where: { id },
         });

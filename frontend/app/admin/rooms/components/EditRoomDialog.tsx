@@ -51,12 +51,39 @@ export function EditRoomDialog({
     onEditDataChange,
     onSubmit,
 }: EditRoomDialogProps) {
+
+    const selectedRoomType = roomTypes.find(rt => rt.id === editData.typeId);
+    const primaryImage = selectedRoomType?.images?.find(img => img.isPrimary) || selectedRoomType?.images?.[0];
+
     return (
         <Dialog open={!!room} onOpenChange={() => onClose()}>
             <DialogContent className="sm:max-w-md rounded-2xl">
-                <DialogHeader>
-                    <DialogTitle>Chỉnh sửa phòng {room?.roomNumber}</DialogTitle>
-                    <DialogDescription>Cập nhật thông tin phòng</DialogDescription>
+                {/* Image Preview */}
+                {primaryImage?.url && (
+                    <div className="relative h-32 -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-2xl">
+                        <img
+                            src={primaryImage.url}
+                            alt={selectedRoomType?.name || 'Room'}
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute bottom-3 left-4">
+                            <p className="text-white/80 text-xs">{selectedRoomType?.name}</p>
+                            <p className="text-white text-lg font-bold">Phòng {room?.roomNumber}</p>
+                        </div>
+                    </div>
+                )}
+
+                <DialogHeader className={primaryImage?.url ? '' : 'mb-4'}>
+                    {!primaryImage?.url && (
+                        <>
+                            <DialogTitle>Chỉnh sửa phòng {room?.roomNumber}</DialogTitle>
+                            <DialogDescription>Cập nhật thông tin phòng</DialogDescription>
+                        </>
+                    )}
+                    {primaryImage?.url && (
+                        <DialogDescription>Cập nhật thông tin phòng</DialogDescription>
+                    )}
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-2 gap-4">

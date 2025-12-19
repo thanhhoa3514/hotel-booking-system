@@ -90,6 +90,22 @@ export default function RoomDetailPage({ params }: RoomDetailPageProps) {
     const images = roomType?.images || [];
     const hasImages = images.length > 0;
 
+    // Parse amenities if it's a JSON string
+    const amenitiesArray: string[] = (() => {
+        if (!roomType?.amenities) return [];
+        try {
+            if (typeof roomType.amenities === 'string') {
+                const parsed = JSON.parse(roomType.amenities);
+                return Array.isArray(parsed) ? parsed : [];
+            }
+            return Array.isArray(roomType.amenities) ? roomType.amenities : [];
+        } catch {
+            return [];
+        }
+    })();
+
+    const guestCount = roomType?.capacity || roomType?.maxOccupancy || 2;
+
     const nights = dateRange?.from && dateRange?.to
         ? differenceInDays(dateRange.to, dateRange.from)
         : 0;
@@ -258,7 +274,7 @@ export default function RoomDetailPage({ params }: RoomDetailPageProps) {
                                     <Users className="h-6 w-6 text-orange-500" />
                                     <div>
                                         <p className="text-sm text-slate-500">Số khách</p>
-                                        <p className="font-semibold">{roomType.maxOccupancy} người</p>
+                                        <p className="font-semibold">{guestCount} người</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
@@ -291,13 +307,13 @@ export default function RoomDetailPage({ params }: RoomDetailPageProps) {
                             )}
 
                             {/* Amenities */}
-                            {roomType.amenities && roomType.amenities.length > 0 && (
+                            {amenitiesArray.length > 0 && (
                                 <>
                                     <Separator />
                                     <div>
                                         <h2 className="text-xl font-semibold mb-4">Tiện nghi</h2>
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            {roomType.amenities.map((amenity, idx) => (
+                                            {amenitiesArray.map((amenity, idx) => (
                                                 <div
                                                     key={idx}
                                                     className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl"
@@ -369,7 +385,7 @@ export default function RoomDetailPage({ params }: RoomDetailPageProps) {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {Array.from({ length: roomType.maxOccupancy || 4 }, (_, i) => i + 1).map((n) => (
+                                            {Array.from({ length: guestCount }, (_, i) => i + 1).map((n) => (
                                                 <SelectItem key={n} value={String(n)}>
                                                     {n} khách
                                                 </SelectItem>

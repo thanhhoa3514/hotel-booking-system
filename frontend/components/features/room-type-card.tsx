@@ -41,7 +41,24 @@ const getAmenityIcon = (amenity: string) => {
 
 export function RoomTypeCard({ roomType }: RoomTypeCardProps) {
     const primaryImage = roomType.images?.find(img => img.isPrimary) || roomType.images?.[0];
-    const displayedAmenities = roomType.amenities?.slice(0, 4) || [];
+
+    // Parse amenities if it's a JSON string
+    let amenitiesArray: string[] = [];
+    try {
+        if (roomType.amenities) {
+            amenitiesArray = typeof roomType.amenities === 'string'
+                ? JSON.parse(roomType.amenities)
+                : roomType.amenities;
+            if (!Array.isArray(amenitiesArray)) {
+                amenitiesArray = [];
+            }
+        }
+    } catch {
+        amenitiesArray = [];
+    }
+
+    const displayedAmenities = amenitiesArray.slice(0, 4);
+    const guestCount = roomType.capacity || roomType.maxOccupancy || 2;
 
     return (
         <Card className="group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl bg-white dark:bg-slate-900">
@@ -84,12 +101,14 @@ export function RoomTypeCard({ roomType }: RoomTypeCardProps) {
                 <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300 mb-4">
                     <div className="flex items-center gap-1.5">
                         <Users className="h-4 w-4 text-orange-500" />
-                        <span>{roomType.maxOccupancy} khách</span>
+                        <span>{guestCount} khách</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <Maximize2 className="h-4 w-4 text-orange-500" />
-                        <span>{roomType.size} m²</span>
-                    </div>
+                    {roomType.size && (
+                        <div className="flex items-center gap-1.5">
+                            <Maximize2 className="h-4 w-4 text-orange-500" />
+                            <span>{roomType.size} m²</span>
+                        </div>
+                    )}
                     <div className="flex items-center gap-1.5">
                         <Bed className="h-4 w-4 text-orange-500" />
                         <span>{getBedTypeLabel(roomType.bedType)}</span>
@@ -105,9 +124,9 @@ export function RoomTypeCard({ roomType }: RoomTypeCardProps) {
                                 <span className="ml-1">{amenity}</span>
                             </Badge>
                         ))}
-                        {roomType.amenities && roomType.amenities.length > 4 && (
+                        {amenitiesArray.length > 4 && (
                             <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-500 font-normal text-xs">
-                                +{roomType.amenities.length - 4}
+                                +{amenitiesArray.length - 4}
                             </Badge>
                         )}
                     </div>

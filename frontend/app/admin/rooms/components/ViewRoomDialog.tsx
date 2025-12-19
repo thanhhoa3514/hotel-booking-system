@@ -1,6 +1,6 @@
 "use client";
 
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,11 +29,10 @@ interface ViewRoomDialogProps {
 export function ViewRoomDialog({ room, onClose }: ViewRoomDialogProps) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-    if (!room) return null;
-
-    const roomType = room.roomType;
+    const roomType = room?.roomType;
     const images = roomType?.images || [];
     const hasImages = images.length > 0;
+
     useEffect(() => {
         // reset on room change / new image list
         setCurrentImageIndex(0);
@@ -43,6 +42,9 @@ export function ViewRoomDialog({ room, onClose }: ViewRoomDialogProps) {
         // clamp if image list shrinks
         setCurrentImageIndex((idx) => Math.min(idx, Math.max(0, images.length - 1)));
     }, [images.length]);
+
+    if (!room) return null;
+
     const statusConfig = getStatusConfig(room.status);
 
     const handlePrevImage = () => {
@@ -125,6 +127,27 @@ export function ViewRoomDialog({ room, onClose }: ViewRoomDialogProps) {
 
                 {/* Content */}
                 <div className="p-6">
+                    {/* Image Thumbnails Strip */}
+                    {images.length > 1 && (
+                        <div className="flex gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
+                            {images.map((img, idx) => (
+                                <button
+                                    key={img.id}
+                                    className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${idx === currentImageIndex
+                                        ? "border-orange-500 ring-2 ring-orange-500/20"
+                                        : "border-transparent opacity-70 hover:opacity-100 hover:border-slate-300"
+                                        }`}
+                                    onClick={() => setCurrentImageIndex(idx)}
+                                >
+                                    <img
+                                        src={img.url}
+                                        alt={img.caption || `Image ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                    )}
                     <DialogHeader className="mb-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -173,22 +196,36 @@ export function ViewRoomDialog({ room, onClose }: ViewRoomDialogProps) {
                     )}
 
                     {/* Amenities */}
-                    {roomType?.amenities && roomType.amenities.length > 0 && (
-                        <div className="mb-4">
-                            <h4 className="font-medium mb-2">Tiện nghi</h4>
-                            <div className="flex flex-wrap gap-2">
-                                {roomType.amenities.map((amenity, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-sm"
-                                    >
-                                        {getAmenityIcon(amenity)}
-                                        <span className="capitalize">{amenity}</span>
-                                    </div>
-                                ))}
+                    {roomType?.amenities && (() => {
+                        // Parse amenities if it's a JSON string
+                        let amenitiesArray: string[] = [];
+                        try {
+                            amenitiesArray = typeof roomType.amenities === 'string'
+                                ? JSON.parse(roomType.amenities)
+                                : roomType.amenities;
+                        } catch {
+                            amenitiesArray = [];
+                        }
+
+                        if (!Array.isArray(amenitiesArray) || amenitiesArray.length === 0) return null;
+
+                        return (
+                            <div className="mb-4">
+                                <h4 className="font-medium mb-2">Tiện nghi</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {amenitiesArray.map((amenity, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-sm"
+                                        >
+                                            {getAmenityIcon(amenity)}
+                                            <span className="capitalize">{amenity}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {/* Notes */}
                     {room.notes && (
@@ -202,30 +239,7 @@ export function ViewRoomDialog({ room, onClose }: ViewRoomDialogProps) {
                         </div>
                     )}
 
-                    {/* Image Thumbnails */}
-                    {images.length > 1 && (
-                        <div className="mt-4">
-                            <h4 className="font-medium mb-2">Hình ảnh ({images.length})</h4>
-                            <div className="flex gap-2 overflow-x-auto pb-2">
-                                {images.map((img, idx) => (
-                                    <button
-                                        key={img.id}
-                                        className={`flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-colors ${idx === currentImageIndex
-                                            ? "border-orange-500"
-                                            : "border-transparent hover:border-slate-300"
-                                            }`}
-                                        onClick={() => setCurrentImageIndex(idx)}
-                                    >
-                                        <img
-                                            src={img.url}
-                                            alt={img.caption || `Image ${idx + 1}`}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+
                 </div>
             </DialogContent>
         </Dialog>

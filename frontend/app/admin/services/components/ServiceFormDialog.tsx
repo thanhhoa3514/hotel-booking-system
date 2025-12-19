@@ -249,7 +249,7 @@ export function ServiceFormDialog({
                                                 type="number"
                                                 placeholder="60"
                                                 className="rounded-xl"
-                                                {...field}
+                                                value={field.value ?? ""}
                                                 onChange={(e) =>
                                                     field.onChange(
                                                         e.target.value ? Number(e.target.value) : undefined
@@ -275,7 +275,7 @@ export function ServiceFormDialog({
                                                 type="number"
                                                 placeholder="10"
                                                 className="rounded-xl"
-                                                {...field}
+                                                value={field.value ?? ""}
                                                 onChange={(e) =>
                                                     field.onChange(
                                                         e.target.value ? Number(e.target.value) : undefined

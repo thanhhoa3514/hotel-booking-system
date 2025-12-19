@@ -28,6 +28,27 @@ export interface UpdateRoomData {
   notes?: string;
 }
 
+export interface RoomImageData {
+  url: string;
+  altText?: string;
+  isPrimary: boolean;
+  displayOrder: number;
+}
+
+export interface CreateRoomTypeData {
+  name: string;
+  description?: string;
+  basePrice: number;
+  capacity: number;
+  bedType: 'SINGLE' | 'DOUBLE' | 'QUEEN' | 'KING' | 'TWIN';
+  bedCount?: number;
+  size?: number;
+  amenities?: string[];
+  displayOrder?: number;
+  isActive?: boolean;
+  images?: RoomImageData[];
+}
+
 export const roomsApi = {
   /**
    * Get all rooms with optional filters
@@ -104,6 +125,29 @@ export const roomsApi = {
   getRoomType: async (id: string): Promise<RoomType> => {
     const response = await api.get<RoomType>(`/room-types/${id}`);
     return response.data;
+  },
+
+  /**
+   * Create a new room type with images
+   */
+  createRoomType: async (data: CreateRoomTypeData): Promise<RoomType> => {
+    const response = await api.post<RoomType>("/room-types", data);
+    return response.data;
+  },
+
+  /**
+   * Update a room type
+   */
+  updateRoomType: async (id: string, data: Partial<CreateRoomTypeData>): Promise<RoomType> => {
+    const response = await api.patch<RoomType>(`/room-types/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete a room type
+   */
+  deleteRoomType: async (id: string): Promise<void> => {
+    await api.delete(`/room-types/${id}`);
   },
 
   /**

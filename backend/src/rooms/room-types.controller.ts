@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, Query } from '@nestjs/common';
 import { RoomTypesService } from './room-types.service';
-import { CreateRoomTypeDto, UpdateRoomTypeDto } from './dto/room-type.dto';
+import { CreateRoomTypeDto, QueryRoomTypesDto, UpdateRoomTypeDto } from './dto/room-type.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
 
 @Controller('room-types')
@@ -10,15 +10,14 @@ export class RoomTypesController {
     @Post()
     @UsePipes(ZodValidationPipe)
     create(@Body() createRoomTypeDto: CreateRoomTypeDto) {
+
         return this.roomTypesService.create(createRoomTypeDto);
     }
 
     @Get()
-    findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
-        return this.roomTypesService.findAll({
-            page: page ? Number(page) : 1,
-            limit: limit ? Number(limit) : 20
-        });
+    @UsePipes(ZodValidationPipe)
+    findAll(@Query() query: QueryRoomTypesDto) {
+        return this.roomTypesService.findAll(query);
     }
 
 

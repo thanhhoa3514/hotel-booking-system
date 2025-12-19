@@ -19,6 +19,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { JwtService } from './jwt/jwt.service';
 import { RedisService } from './redis/redis.service';
 import { RedisModule } from './redis/redis.module';
+import { UploadModule } from './upload/upload.module';
 // import { HealthController } from './health/health.controller';
 
 @Module({
@@ -86,6 +87,7 @@ import { RedisModule } from './redis/redis.module';
       },
     }),
     RedisModule,
+    UploadModule,
   ],
   controllers: [AppController, /* HealthController */],
   providers: [AppService, JwtService, RedisService],

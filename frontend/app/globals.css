@@ -1,6 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Smooth scrolling with accessibility support */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -52,7 +63,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
   /* Orange 500 for Primary */
-  --primary: oklch(0.627 0.265 30.347); 
+  --primary: oklch(0.627 0.265 30.347);
   --primary-foreground: oklch(0.985 0 0);
   /* Orange 100 for Secondary */
   --secondary: oklch(0.945 0.062 60.103);
@@ -60,7 +71,7 @@
   --muted: oklch(0.967 0.001 286.375);
   --muted-foreground: oklch(0.552 0.016 285.938);
   /* Orange 50 for Accent */
-  --accent: oklch(0.98 0.02 60); 
+  --accent: oklch(0.98 0.02 60);
   --accent-foreground: oklch(0.424 0.199 30.347);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.92 0.004 286.32);
@@ -120,6 +131,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

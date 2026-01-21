@@ -74,37 +74,6 @@
 
 ## 10. Frontend - Passkey Registration
 
-- [ ] 10.1 Create passkey registration page/modal
-- [ ] 10.2 Implement registration begin API call
-- [ ] 10.3 Implement navigator.credentials.create() call
-- [ ] 10.4 Implement registration complete API call
-- [ ] 10.5 Add loading states and error handling
-- [ ] 10.6 Add success feedback
-
-## 11. Frontend - Passkey Authentication
-
-- [ ] 11.1 Add passkey login button on login page
-- [ ] 11.2 Implement login begin API call
-- [ ] 11.3 Implement navigator.credentials.get() call
-- [ ] 11.4 Implement login complete API call
-- [ ] 11.5 Store access token in memory
-- [ ] 11.6 Store refresh token in httpOnly cookie (or secure storage)
-
-## 12. Frontend - Passkey Management
-
-- [ ] 12.1 Create passkey management page in user dashboard
-- [ ] 12.2 Display list of registered passkeys
-- [ ] 12.3 Add "Register New Passkey" button
-- [ ] 12.4 Add remove passkey functionality
-- [ ] 12.5 Add rename device functionality
-- [ ] 12.6 Show last used timestamp
-
-## 13. Frontend - Token Refresh
-
-- [ ] 13.1 Implement automatic token refresh logic
-- [ ] 13.2 Add axios interceptor for 401 responses
-- [ ] 13.3 Retry failed requests after refresh
-- [ ] 13.4 Handle refresh token expiration (redirect to login)
 
 ## 14. Testing
 
@@ -119,7 +88,4 @@
 
 ## 15. Documentation
 
-- [ ] 15.1 Update API documentation with passkey endpoints
-- [ ] 15.2 Add user guide for passkey setup
-- [ ] 15.3 Document environment variables
-- [ ] 15.4 Add troubleshooting guide
+

@@ -84,7 +84,9 @@ export default function BookingsDashboard() {
             booking.roomName.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
         return matchesSearch && matchesStatus;
-    });
+    })
+        .sort((a, b) => b.guests - a.guests)
+        .slice(0, 2);
 
     const getStatusBadge = (status: string) => {
         const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];

@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { Logger } from 'nestjs-pino';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
+import compression from 'compression';
 import { json } from 'express';
 
 async function bootstrap() {
@@ -11,6 +12,7 @@ async function bootstrap() {
     rawBody: true, // Enable raw body for webhooks
   });
   app.useLogger(app.get(Logger));
+  app.use(compression());
   app.use(
     helmet({
       contentSecurityPolicy: {

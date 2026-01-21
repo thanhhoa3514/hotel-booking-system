@@ -14,11 +14,17 @@ import { useAuthStore } from '@/stores/auth.store';
 import { loginSchema, type LoginFormData } from '@/features/auth/auth.schema';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { Fingerprint } from 'lucide-react';
+import { loginPasskeyBegin, loginPasskeyComplete } from '@/services/passkey.api';
+import { startPasskeyAuthentication, isWebAuthnSupported } from '@/lib/webauthn';
+import { Role, User } from '@/types/auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { login, isLoading, error, clearError, setUser, setToken } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [showPasskeyLogin, setShowPasskeyLogin] = useState(false);
 
   const {
     register,
@@ -59,6 +65,55 @@ export default function LoginPage() {
       // Error handled by store
       console.error('Login error:', err);
       toast.error('Đăng nhập thất bại');
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    if (!isWebAuthnSupported()) {
+      toast.error('Trình duyệt của bạn không hỗ trợ Passkey');
+      return;
+    }
+
+    const email = (document.getElementById('email') as HTMLInputElement)?.value;
+    if (!email) {
+      toast.error('Vui lòng nhập email để đăng nhập bằng Passkey');
+      return;
+    }
+
+    setPasskeyLoading(true);
+    try {
+      // Step 1: Get authentication options
+      const options = await loginPasskeyBegin(email);
+
+      // Step 2: Start WebAuthn authentication
+      const credential = await startPasskeyAuthentication(options);
+
+      // Step 3: Complete authentication
+      const response = await loginPasskeyComplete(email, credential);
+
+      // Store token and user
+      setToken(response.access_token);
+      setUser({
+        ...response.user,
+        status: 'ACTIVE',
+        roleId: response.user.role.id as string,
+        phone: response.user.phone as string,
+        avatarUrl: response.user.avatarUrl as string,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      } as User);
+
+      // Store refresh token in localStorage (in production, use httpOnly cookie)
+      localStorage.setItem('refresh_token', response.refresh_token);
+
+      const redirectPath = getRedirectPath(response.user.role.name);
+      toast.success('Đăng nhập thành công ');
+      router.push(redirectPath);
+    } catch (error: any) {
+      console.error('Passkey login error:', error);
+      toast.error(error.message || 'Không thể đăng nhập bằng Passkey');
+    } finally {
+      setPasskeyLoading(false);
     }
   };
 
@@ -137,12 +192,29 @@ export default function LoginPage() {
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || passkeyLoading}>
               {isLoading && (
                 <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
               )}
               Đăng nhập
             </Button>
+
+            {isWebAuthnSupported() && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handlePasskeyLogin}
+                disabled={isLoading || passkeyLoading}
+              >
+                {passkeyLoading ? (
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Fingerprint className="mr-2 h-4 w-4" />
+                )}
+                Đăng nhập bằng Passkey
+              </Button>
+            )}
           </div>
         </form>
 

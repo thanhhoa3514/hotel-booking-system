@@ -74,37 +74,6 @@
 
 ## 10. Frontend - Passkey Registration
 
-- [x] 10.1 Create passkey registration page/modal
-- [x] 10.2 Implement registration begin API call
-- [x] 10.3 Implement navigator.credentials.create() call
-- [x] 10.4 Implement registration complete API call
-- [x] 10.5 Add loading states and error handling
-- [x] 10.6 Add success feedback
-
-## 11. Frontend - Passkey Authentication
-
-- [x] 11.1 Add passkey login button on login page
-- [x] 11.2 Implement login begin API call
-- [x] 11.3 Implement navigator.credentials.get() call
-- [x] 11.4 Implement login complete API call
-- [x] 11.5 Store access token in memory
-- [x] 11.6 Store refresh token in localStorage (production: httpOnly cookie)
-
-## 12. Frontend - Passkey Management
-
-- [x] 12.1 Create passkey management page in user dashboard
-- [x] 12.2 Display list of registered passkeys
-- [x] 12.3 Add "Register New Passkey" button
-- [x] 12.4 Add remove passkey functionality
-- [x] 12.5 Add rename device functionality
-- [x] 12.6 Show last used timestamp
-
-## 13. Frontend - Token Refresh
-
-- [x] 13.1 Implement automatic token refresh logic
-- [x] 13.2 Add axios interceptor for 401 responses
-- [x] 13.3 Retry failed requests after refresh
-- [x] 13.4 Handle refresh token expiration (redirect to login)
 
 ## 14. Testing
 
@@ -119,34 +88,4 @@
 
 ## 15. Documentation
 
-- [x] 15.1 Update API documentation with passkey endpoints
-- [x] 15.2 Add user guide for passkey setup
-- [x] 15.3 Document environment variables
-- [x] 15.4 Add troubleshooting guide
 
-## Implementation Status
-
-All development tasks (sections 1-13, 15) are complete. Testing (section 14) is ready to begin.
-
-### Summary of Completed Work:
-
-#### Backend
-- Database schema with 3 new tables (passkey_credentials, auth_challenges, refresh_tokens)
-- Complete Passkey module with service, controller, and DTOs
-- 9 REST API endpoints for registration, authentication, and management
-- Security features: rate limiting, challenge expiration, sign count tracking
-- Token refresh with SHA-256 hashing and rotation
-
-#### Frontend
-- WebAuthn helper utilities for browser integration
-- Passkey API service layer
-- Registration dialog component
-- Login page with passkey button
-- Full management dashboard at /dashboard/passkeys
-- Automatic token refresh interceptor
-
-#### Documentation
-- PASSKEY_ENV_SETUP.md - Environment configuration guide
-- PASSKEY_IMPLEMENTATION_SUMMARY.md - Backend implementation details
-- PASSKEY_FEATURE_COMPLETE.md - Complete feature documentation
-- All tasks tracked and updated in tasks.md

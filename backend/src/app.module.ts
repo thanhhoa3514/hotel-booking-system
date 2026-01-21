@@ -16,15 +16,22 @@ import { ServiceBookingsModule } from './service-bookings/service-bookings.modul
 import { BullModule } from '@nestjs/bull';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtService } from './jwt/jwt.service';
 import { RedisService } from './redis/redis.service';
 import { RedisModule } from './redis/redis.module';
 import { UploadModule } from './upload/upload.module';
+import { PasskeyModule } from './passkey/passkey.module';
 // import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 1 minute
+      limit: 10, // 10 requests per minute (default)
+    }]),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -46,6 +53,7 @@ import { UploadModule } from './upload/upload.module';
     NotificationsModule,
     ServicesModule,
     ServiceBookingsModule,
+    PasskeyModule,
     PrismaModule,
     LoggerModule.forRoot({
       pinoHttp: {
@@ -90,6 +98,14 @@ import { UploadModule } from './upload/upload.module';
     UploadModule,
   ],
   controllers: [AppController, /* HealthController */],
-  providers: [AppService, JwtService, RedisService],
+  providers: [
+    AppService,
+    JwtService,
+    RedisService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule { }
